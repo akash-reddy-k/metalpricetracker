@@ -224,7 +224,10 @@ function App() {
           </div>
 
           {/* Target Currency */}
-          <div className="currency-selector-wrapper">
+          <div
+            className="currency-selector-wrapper"
+            title="Select the target currency for all conversions and calculations across the dashboard. This also determines the destination country's tax profile."
+          >
             <label htmlFor="currency-select-main">Currency</label>
             <select
               id="currency-select-main"
@@ -245,7 +248,10 @@ function App() {
           </div>
 
           {/* Weight Unit */}
-          <div className="currency-selector-wrapper">
+          <div
+            className="currency-selector-wrapper"
+            title="Select the global weight unit (Troy Ounces, Grams, Kilograms) used to scale prices in cards and analytics charts."
+          >
             <label htmlFor="unit-select-main">Weight Unit</label>
             <select
               id="unit-select-main"
@@ -260,7 +266,10 @@ function App() {
           </div>
 
           {/* Update Interval */}
-          <div className="currency-selector-wrapper">
+          <div
+            className="currency-selector-wrapper"
+            title="Select the live pricing data refresh frequency for streaming quotes from Yahoo Finance."
+          >
             <label htmlFor="refresh-select-main">Update Rate</label>
             <select
               id="refresh-select-main"
@@ -290,21 +299,21 @@ function App() {
           exchangeRates={exchangeRates}
         />
 
-        {/* 2. Interactive Charting Overlay */}
-        <AnalyticsChart
-          activeMetal={activeMetal}
-          selectedCurrency={selectedCurrency}
-          spotPrices={prices}
-          weightUnit={weightUnit}
-          exchangeRates={exchangeRates}
-        />
-
-        {/* 3. Global Tax Cost Localization Calculator */}
+        {/* 2. Global Tax Cost Localization Calculator */}
         <Calculator
           activeMetal={activeMetal}
           setActiveMetal={setActiveMetal}
           spotPrices={prices}
           selectedCurrency={selectedCurrency}
+          weightUnit={weightUnit}
+          exchangeRates={exchangeRates}
+        />
+
+        {/* 3. Interactive Charting Overlay */}
+        <AnalyticsChart
+          activeMetal={activeMetal}
+          selectedCurrency={selectedCurrency}
+          spotPrices={prices}
           weightUnit={weightUnit}
           exchangeRates={exchangeRates}
         />

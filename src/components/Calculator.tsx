@@ -348,7 +348,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <span>Subtotal ({selectedCurrency})</span>
           </div>
 
-          <div className="receipt-row">
+          <div
+            className="receipt-row"
+            title="Base market value of the pure metal weight calculated using live international spot rates and exchange rates (Weight × Purity × Spot Price)."
+          >
             <div>
               <span>Raw Metal Spot Value</span>
               <small>
@@ -358,7 +361,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <span>{formatCost(res.rawMetalValue)}</span>
           </div>
 
-          <div className="receipt-row">
+          <div
+            className="receipt-row"
+            title={`Government custom duties applied to imports of raw precious metals (${currentCountry.importDuty}% in ${currentCountry.name}).`}
+          >
             <div>
               <span>Import Tariffs & Duties</span>
               <small>{currentCountry.importDuty}% of Metal Value</small>
@@ -367,7 +373,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </div>
 
           {productType === 'jewellery' && (
-            <div className="receipt-row">
+            <div
+              className="receipt-row"
+              title="Dealer fabrication markup percentage applied directly to the metal content."
+            >
               <div>
                 <span>Jewellery Making Charges</span>
                 <small>{dealerCharges !== '' ? dealerCharges : '0'}% dealer fabrication fee</small>
@@ -376,7 +385,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </div>
           )}
 
-          <div className="receipt-row">
+          <div
+            className="receipt-row"
+            title={`Consumption tax (VAT/GST) applied in ${currentCountry.name}. For jewellery this is standard rate; bullion gold may be exempt.`}
+          >
             <div>
               <span>Value Added Tax (VAT / GST)</span>
               <small>
@@ -401,7 +413,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </div>
 
           {productType === 'bullion' && (
-            <div className="receipt-row">
+            <div
+              className="receipt-row"
+              title={`Retail mint markup adding ${chargesPercent}% markup + ${symbol}${mintFeeTarget.toFixed(2)}/${localWeightUnit} fixed handling fee.`}
+            >
               <div>
                 <span>Dealer & Mint Premium</span>
                 <small>
@@ -415,7 +430,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
           <div className="receipt-divider"></div>
 
-          <div className="receipt-row total">
+          <div
+            className="receipt-row total"
+            title="The final price the consumer pays, summing raw metal value, government tariffs, dealer premium, and consumption taxes."
+          >
             <span>Total Consumer Cost</span>
             <span>{formatCost(res.finalPrice)}</span>
           </div>

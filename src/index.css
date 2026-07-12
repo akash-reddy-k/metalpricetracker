@@ -177,12 +177,18 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  border: 2px solid var(--border-color);
 }
 
-.metal-card:hover {
+.metal-card:hover:not(.active) {
   transform: translateY(-4px);
-  border-color: var(--border-color-hover) !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
+  border-color: var(--border-color-hover);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.metal-card.active:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .metal-card.active {

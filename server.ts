@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { cors } from 'hono/cors';
-import { serve } from '@hono/node-server';
 import YahooFinance from 'yahoo-finance2';
 
 const MAX_REQUESTS_PER_INVOCATION = 120; // Expanded limit for continuous dashboard usage
@@ -234,12 +233,16 @@ async function fetchPrice(symbol: string) {
   return finalPriceData;
 }
 
-// Start local node server on port 3000
-const port = 3000;
-console.log(`Starting Hono backend server on http://localhost:${port}`);
-serve({
-  fetch: app.fetch,
-  port,
-});
+// Start Node.js server dynamically only when running inside a Node runtime (e.g. local PM2 or Heroku)
+// This enables server.ts to be exported directly as a Cloudflare Worker entrypoint without server-start errors.
+if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+  const { serve } = await import('@hono/node-server');
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  console.log(`Starting Hono backend server on http://localhost:${port}`);
+  serve({
+    fetch: app.fetch,
+    port,
+  });
+}
 
 export default app;

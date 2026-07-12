@@ -35,6 +35,18 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'INR',
     importDuty: getEnvNum('VITE_COUNTRY_IN_IMPORT_DUTY', 15.0),
     vatGst: getEnvNum('VITE_COUNTRY_IN_VAT_GST', 3.0),
+    metalImportDuty: {
+      gold: getEnvNum('VITE_COUNTRY_IN_GOLD_IMPORT_DUTY', 15.0),
+      silver: getEnvNum('VITE_COUNTRY_IN_SILVER_IMPORT_DUTY', 15.0),
+      platinum: getEnvNum('VITE_COUNTRY_IN_PLATINUM_IMPORT_DUTY', 15.4),
+      palladium: getEnvNum('VITE_COUNTRY_IN_PALLADIUM_IMPORT_DUTY', 15.0),
+    },
+    metalVatGst: {
+      gold: getEnvNum('VITE_COUNTRY_IN_GOLD_VAT_GST', 3.0),
+      silver: getEnvNum('VITE_COUNTRY_IN_SILVER_VAT_GST', 3.0),
+      platinum: getEnvNum('VITE_COUNTRY_IN_PLATINUM_VAT_GST', 18.0),
+      palladium: getEnvNum('VITE_COUNTRY_IN_PALLADIUM_VAT_GST', 18.0),
+    },
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇮🇳',
@@ -236,4 +248,14 @@ export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
 export function isGoldVatExempt(countryCode: string): boolean {
   const exemptCountries: string[] = [];
   return exemptCountries.includes(countryCode);
+}
+
+// Helper to get metal-specific import duty, falling back to country-level import duty
+export function getMetalImportDuty(country: CountryTaxConfig, metal: MetalType): number {
+  return country.metalImportDuty?.[metal] ?? country.importDuty;
+}
+
+// Helper to get metal-specific VAT/GST, falling back to country-level VAT/GST
+export function getMetalVatGst(country: CountryTaxConfig, metal: MetalType): number {
+  return country.metalVatGst?.[metal] ?? country.vatGst;
 }

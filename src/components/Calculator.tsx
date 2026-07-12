@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import type { MetalType, CurrencyType, WeightUnit, CalculationResult } from '../types/metals';
-import { COUNTRIES, PURITY_OPTIONS, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
+import {
+  COUNTRIES,
+  PURITY_OPTIONS,
+  CURRENCY_SYMBOLS,
+  isGoldVatExempt,
+  getMetalImportDuty,
+  getMetalVatGst,
+} from '../data/countries';
 import { WEIGHT_CONVERSIONS } from '../services/priceEngine';
 import { Calculator as CalcIcon, FileText, Info, Award, Scale } from 'lucide-react';
 
@@ -73,7 +80,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
     const rawMetalValue = baseSpotValue * activePurity;
 
     // Government levies
-    const dutyPercent = currentCountry.importDuty;
+    const dutyPercent = getMetalImportDuty(currentCountry, activeMetal);
     const importDutyValue = rawMetalValue * (dutyPercent / 100);
 
     // Dealer charges vs Making charges (Consolidated and mutually exclusive)
@@ -102,7 +109,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
     // Gold is only VAT exempt if it is investment bullion. Jewellery gold carries standard VAT/GST!
     const isExempt =
       activeMetal === 'gold' && isGoldVatExempt(currentCountry.code) && productType === 'bullion';
-    const vatPercent = isExempt ? 0 : currentCountry.vatGst;
+    const vatPercent = isExempt ? 0 : getMetalVatGst(currentCountry, activeMetal);
     const vatGstValue = (rawMetalValue + importDutyValue + makingChargesValue) * (vatPercent / 100);
 
     // Final consumer price
@@ -163,7 +170,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
       : 0;
 
   return (
-    <div className="calculator-wrapper">
+    <div id="tax-calculator-section" className="calculator-wrapper">
       <div className="card-panel">
         <div className="panel-title">
           <CalcIcon size={20} className="glow-purple-text" />
@@ -304,7 +311,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
           </div>
           <div className="rates-summary-flex">
             <span>
-              Import Duty: <strong>{currentCountry.importDuty}%</strong>
+              Import Duty: <strong>{getMetalImportDuty(currentCountry, activeMetal)}%</strong>
             </span>
             <span>
               VAT/GST:{' '}
@@ -313,7 +320,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
                 isGoldVatExempt(currentCountry.code) &&
                 productType === 'bullion'
                   ? '0% (Exempt)'
-                  : `${currentCountry.vatGst}%`}
+                  : `${getMetalVatGst(currentCountry, activeMetal)}%`}
               </strong>
             </span>
             {productType === 'bullion' ? (
@@ -363,11 +370,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
           <div
             className="receipt-row"
-            title={`Government custom duties applied to imports of raw precious metals (${currentCountry.importDuty}% in ${currentCountry.name}).`}
+            title={`Government custom duties applied to imports of raw precious metals (${getMetalImportDuty(currentCountry, activeMetal)}% in ${currentCountry.name}).`}
           >
             <div>
               <span>Import Tariffs & Duties</span>
-              <small>{currentCountry.importDuty}% of Metal Value</small>
+              <small>{getMetalImportDuty(currentCountry, activeMetal)}% of Metal Value</small>
             </div>
             <span>{formatCost(res.importDutyValue)}</span>
           </div>
@@ -396,7 +403,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
                 isGoldVatExempt(currentCountry.code) &&
                 productType === 'bullion'
                   ? 'Exempt (Investment Gold)'
-                  : `${currentCountry.vatGst}% on (Metal + Duty${res.makingChargesValue > 0 ? ' + Making' : ''})`}
+                  : `${getMetalVatGst(currentCountry, activeMetal)}% on (Metal + Duty${res.makingChargesValue > 0 ? ' + Making' : ''})`}
               </small>
             </div>
             <span

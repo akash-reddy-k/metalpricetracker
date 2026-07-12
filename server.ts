@@ -108,6 +108,20 @@ interface YahooQuote {
   meta?: Record<string, unknown>;
 }
 
+interface CachedPrice {
+  price: number;
+  change: number;
+  state: string;
+  meta: {
+    preMarketChange: number;
+    regularMarketChange: number;
+    postMarketChange: number;
+  };
+  timestamp: number;
+}
+
+const priceCache = new Map<string, CachedPrice>();
+
 async function fetchPrice(symbol: string) {
   const fields = [
     'marketState',
@@ -124,7 +138,7 @@ async function fetchPrice(symbol: string) {
     result = (await yf.quoteCombine(symbol, { fields }, { validateResult: false })) as
       YahooQuote | YahooQuote[] | null | undefined;
   } catch (error: unknown) {
-    // If it's a validation error, YahooFinance still stores the parsed data inside error.result
+    // Check cache fallback first for any non-validation error
     if (
       error &&
       typeof error === 'object' &&
@@ -135,6 +149,16 @@ async function fetchPrice(symbol: string) {
       console.warn(`[YahooFinance] Validation failed for ${symbol}, falling back to error.result`);
       result = (error as { result: YahooQuote | YahooQuote[] }).result;
     } else {
+      const cached = priceCache.get(symbol);
+      if (cached) {
+        console.warn(
+          `[YahooFinance] Failed to fetch live rate for ${symbol}, falling back to cache (stale by ${Math.round(
+            (Date.now() - cached.timestamp) / 1000
+          )}s):`,
+          error
+        );
+        return cached;
+      }
       throw error;
     }
   }
@@ -161,9 +185,10 @@ async function fetchPrice(symbol: string) {
   // Safeguard: fallback to whichever price fields are populated if the current state field is empty
   const fallbackPrice = regularMarketPrice ?? postMarketPrice ?? preMarketPrice ?? 0;
 
+  let finalPriceData;
   switch (marketState) {
     case 'PRE':
-      return {
+      finalPriceData = {
         price: preMarketPrice ?? fallbackPrice,
         change: preMarketChangeVal,
         state: 'PRE',
@@ -173,8 +198,9 @@ async function fetchPrice(symbol: string) {
           postMarketChange: postMarketChangeVal,
         },
       };
+      break;
     case 'REGULAR':
-      return {
+      finalPriceData = {
         price: regularMarketPrice ?? fallbackPrice,
         change: regularMarketChangeVal,
         state: 'REGULAR',
@@ -184,8 +210,9 @@ async function fetchPrice(symbol: string) {
           postMarketChange: postMarketChangeVal,
         },
       };
+      break;
     default:
-      return {
+      finalPriceData = {
         price: postMarketPrice ?? fallbackPrice,
         change: regularMarketChangeVal + postMarketChangeVal,
         state: 'POST',
@@ -195,7 +222,16 @@ async function fetchPrice(symbol: string) {
           postMarketChange: postMarketChangeVal,
         },
       };
+      break;
   }
+
+  // Save successful response in cache
+  priceCache.set(symbol, {
+    ...finalPriceData,
+    timestamp: Date.now(),
+  });
+
+  return finalPriceData;
 }
 
 // Start local node server on port 3000

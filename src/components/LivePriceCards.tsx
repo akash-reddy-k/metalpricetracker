@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
 import { getPricePerUnit, BASE_PRICES } from '../services/priceEngine';
-import { COUNTRIES } from '../data/countries';
+import { COUNTRIES, getMetalImportDuty } from '../data/countries';
 import { Sparkles, Activity } from 'lucide-react';
 
 interface LivePriceCardsProps {
@@ -171,7 +171,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
         const baseSpotPriceTarget = currentPriceUSD * currencyRate * getPricePerUnit(1, weightUnit);
 
         // Import duty
-        const dutyPercent = currentCountry.importDuty;
+        const dutyPercent = getMetalImportDuty(currentCountry, metal);
         const importDutyVal = baseSpotPriceTarget * (dutyPercent / 100);
         const localPriceWithDuty = baseSpotPriceTarget + importDutyVal;
 

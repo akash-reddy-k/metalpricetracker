@@ -5,6 +5,7 @@ import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
+import { AdSlot } from './components/AdSlot';
 import { Coins, ShieldCheck } from 'lucide-react';
 import './index.css';
 
@@ -35,22 +36,54 @@ function App() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
 
-  // Auto-detect user country on initial load using a free IP geolocation API
+  // Auto-detect user country on initial load using resilient fallback APIs
   useEffect(() => {
     const detectGeoLocation = async () => {
       try {
-        const response = await fetch('https://ipapi.co/json/');
-        if (response.ok) {
-          const data = await response.json();
-          const countryCode = data.country_code; // e.g. "IN", "US"
-          if (countryCode) {
-            const matched = COUNTRIES.find(
-              (c) => c.code.toUpperCase() === countryCode.toUpperCase()
-            );
-            if (matched) {
-              setSelectedCurrency(matched.currency);
-              console.log(`Auto-detected location: ${matched.name} (${matched.currency})`);
+        let countryCode = '';
+
+        // 1. Try FreeIPAPI (HTTPS, fast, no auth)
+        try {
+          const response = await fetch('https://freeipapi.com/api/json');
+          if (response.ok) {
+            const data = await response.json();
+            countryCode = data.countryCode;
+          }
+        } catch (e) {
+          console.warn('FreeIPAPI failed, trying ipapi.co:', e);
+        }
+
+        // 2. Try ipapi.co (Fallback)
+        if (!countryCode) {
+          try {
+            const response = await fetch('https://ipapi.co/json/');
+            if (response.ok) {
+              const data = await response.json();
+              countryCode = data.country_code;
             }
+          } catch (e) {
+            console.warn('ipapi.co failed, trying ipinfo.io:', e);
+          }
+        }
+
+        // 3. Try ipinfo.io (Secondary Fallback)
+        if (!countryCode) {
+          try {
+            const response = await fetch('https://ipinfo.io/json');
+            if (response.ok) {
+              const data = await response.json();
+              countryCode = data.country;
+            }
+          } catch (e) {
+            console.warn('ipinfo.io failed:', e);
+          }
+        }
+
+        if (countryCode) {
+          const matched = COUNTRIES.find((c) => c.code.toUpperCase() === countryCode.toUpperCase());
+          if (matched) {
+            setSelectedCurrency(matched.currency);
+            console.log(`Auto-detected location: ${matched.name} (${matched.currency})`);
           }
         }
       } catch (err) {
@@ -309,6 +342,11 @@ function App() {
           exchangeRates={exchangeRates}
         />
 
+        {/* Mock Banner Ad Slot */}
+        <div style={{ gridColumn: '1 / -1' }}>
+          <AdSlot id="ad-banner-top" type="banner" />
+        </div>
+
         {/* 2. Global Tax Cost Localization Calculator */}
         <Calculator
           activeMetal={activeMetal}
@@ -327,6 +365,17 @@ function App() {
           weightUnit={weightUnit}
           exchangeRates={exchangeRates}
         />
+
+        {/* Bottom Banner Ad Slot */}
+        <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
+          <AdSlot
+            id="ad-banner-bottom"
+            type="banner"
+            title="Premium Precious Metal IRA Custody"
+            description="Protect your retirement savings with physical gold and silver tax-free. Get a free kit today."
+            sponsor="Goldco Bullion"
+          />
+        </div>
       </main>
 
       {/* Bottom Footer */}

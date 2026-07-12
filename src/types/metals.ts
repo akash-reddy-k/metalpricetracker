@@ -26,8 +26,10 @@ export interface CountryTaxConfig {
   code: string;
   name: string;
   currency: CurrencyType;
-  importDuty: number; // Percentage (e.g. 15 for 15%)
-  vatGst: number; // Percentage (e.g. 18 for 18% GST/VAT)
+  importDuty: number; // Global fallback Percentage (e.g. 15 for 15%)
+  vatGst: number; // Global fallback Percentage (e.g. 18 for 18% GST/VAT)
+  metalImportDuty?: Partial<Record<MetalType, number>>; // Metal specific override
+  metalVatGst?: Partial<Record<MetalType, number>>; // Metal specific override
   dealerPremium: number; // Percentage (e.g. 3.5 for 3.5% average premium)
   fixedMintFeePerOz: number; // Fixed fee in USD per oz
   flag: string; // emoji representation of the flag

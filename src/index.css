@@ -1186,18 +1186,156 @@ body {
 
 /* Responsiveness fixes */
 @media (max-width: 768px) {
+  #root {
+    padding: 16px 12px 40px;
+  }
+
   .app-header {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 20px;
+  }
+
+  .logo-section {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .app-title-block p {
+    margin-top: 4px;
   }
 
   .header-controls {
     width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .currency-selector-wrapper {
+    flex: 1 1 calc(50% - 6px);
+    min-width: 140px;
     justify-content: space-between;
+    box-sizing: border-box;
   }
 
   .app-footer {
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .currency-selector-wrapper {
+    flex: 1 1 100%;
+  }
+}
+
+/* Showcase & ad grid row layout */
+.showcase-grid-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 3.2fr 1fr;
+  gap: 24px;
+  align-items: start;
+  margin-top: 24px;
+}
+
+.sidebar-ad-wrapper {
+  margin-top: 90px;
+}
+
+@media (max-width: 1024px) {
+  .showcase-grid-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .sidebar-ad-wrapper {
+    margin-top: 10px;
+  }
+}
+
+/* Ad Slot Styles */
+.ad-banner-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border: 1px solid rgba(245, 158, 11, 0.15) !important;
+  background: linear-gradient(
+    90deg,
+    rgba(245, 158, 11, 0.04) 0%,
+    rgba(17, 20, 31, 0.75) 100%
+  ) !important;
+  border-radius: 12px;
+  margin: 16px 0;
+  gap: 16px;
+}
+
+.ad-banner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+.ad-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .ad-banner-container {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    gap: 14px;
+    text-align: center;
+  }
+
+  .ad-banner-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .ad-banner-actions {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .ad-banner-actions a {
+    flex-grow: 1;
+    justify-content: center;
+  }
+}
+
+/* Showcase Cards responsiveness */
+.showcase-card-container {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  padding: 16px;
+  align-items: center;
+  border: 2px solid var(--border-color);
+  border-radius: 12px;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .showcase-card-container {
+    flex-direction: column;
+    text-align: center;
+    align-items: center;
+  }
+
+  .showcase-card-container button {
+    align-self: center !important;
   }
 }

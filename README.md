@@ -123,3 +123,9 @@ For detailed production instructions across multiple platforms, refer to the [de
 *   **PaaS Hosting**: Render and Heroku deployments using `entry.node.ts`.
 *   **Static CDN**: Vercel, Netlify, and Cloudflare Pages.
 *   **Serverless Workers**: Exposing endpoints directly via Cloudflare Workers (`npx wrangler deploy --config deployment/wrangler.toml`).
+
+### 🔗 Live Project URL Endpoints
+
+*   **Production App (Custom Domain)**: [https://metalprices.online/](https://metalprices.online/)
+*   **Cloudflare Pages Deploy (Frontend Mirror)**: [https://metalpricetracker.pages.dev/](https://metalpricetracker.pages.dev/)
+*   **Cloudflare Workers Deploy (Hono API Backend)**: [https://yfinlib.akashreddyengineer.workers.dev](https://yfinlib.akashreddyengineer.workers.dev)

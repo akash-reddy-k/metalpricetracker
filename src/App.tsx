@@ -218,7 +218,7 @@ function App() {
             <Coins size={22} className={isFetching ? 'spinning-sparkle' : ''} />
           </div>
           <div className="app-title-block">
-            <h1>MetalPriceTracker</h1>
+            <h1>MetalPrices.Online</h1>
             <p>Precious Metals Live Spot Rates & Global Cost Calculator</p>
           </div>
         </div>
@@ -389,7 +389,7 @@ function App() {
       <footer className="app-footer">
         <div>
           <span>
-            © 2026 MetalPriceTracker Inc. Powered by Yahoo Finance. All calculations are for
+            © 2026 MetalPrices.Online Inc. All calculations are for
             informational purposes.
           </span>
         </div>

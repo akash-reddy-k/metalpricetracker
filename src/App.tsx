@@ -35,6 +35,29 @@ function App() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(true);
 
+  // Auto-detect user country on initial load using a free IP geolocation API
+  useEffect(() => {
+    const detectGeoLocation = async () => {
+      try {
+        const response = await fetch('https://ipapi.co/json/');
+        if (response.ok) {
+          const data = await response.json();
+          const countryCode = data.country_code; // e.g. "IN", "US"
+          if (countryCode) {
+            const matched = COUNTRIES.find(c => c.code.toUpperCase() === countryCode.toUpperCase());
+            if (matched) {
+              setSelectedCurrency(matched.currency);
+              console.log(`Auto-detected location: ${matched.name} (${matched.currency})`);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to auto-detect country location, falling back to USD default:", err);
+      }
+    };
+    detectGeoLocation();
+  }, []);
+
   // SSE streaming connection effect
   useEffect(() => {
     setIsFetching(true);

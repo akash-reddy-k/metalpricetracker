@@ -233,16 +233,4 @@ async function fetchPrice(symbol: string) {
   return finalPriceData;
 }
 
-// Start Node.js server dynamically only when running inside a Node runtime (e.g. local PM2 or Heroku)
-// This enables server.ts to be exported directly as a Cloudflare Worker entrypoint without server-start errors.
-if (typeof process !== 'undefined' && process.versions && process.versions.node) {
-  const { serve } = await import('@hono/node-server');
-  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-  console.log(`Starting Hono backend server on http://localhost:${port}`);
-  serve({
-    fetch: app.fetch,
-    port,
-  });
-}
-
 export default app;

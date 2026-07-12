@@ -1,4 +1,4 @@
 name = "yfinlib"
 main = "../server.ts"
-compatibility_date = "2024-03-01"
-compatibility_flags = [ "nodejs_compat" ]
+compatibility_date = "2026-07-12"
+compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_modules" ]

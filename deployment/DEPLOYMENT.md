@@ -44,7 +44,7 @@ You can host the Hono server on any platform that supports Node.js application h
 1. Link your GitHub repository.
 2. Select **Web Service** or **NodeJS App**.
 3. Set the **Build Command** to: `npm install`
-4. Set the **Start Command** to: `npx tsx server.ts`
+4. Set the **Start Command** to: `npx tsx entry.node.ts`
 5. The cloud provider will automatically inject a production port under `process.env.PORT`.
 
 #### Option B: PM2 on an Ubuntu Server (VPS/AWS EC2)
@@ -56,7 +56,7 @@ You can host the Hono server on any platform that supports Node.js application h
    ```
 4. Start the server daemon:
    ```bash
-   pm2 start npx --name "metals-backend" -- tsx server.ts
+   pm2 start npx --name "metals-backend" -- tsx entry.node.ts
    ```
 5. Save the PM2 process list:
    ```bash
@@ -74,24 +74,25 @@ If you run the Node Hono backend on a private server or VPS and want to prevent 
 4. Save the tunnel. Cloudflare will automatically route requests from `https://api.yourdomain.com` securely to your local Hono port `3000` without exposing any ports publicly.
 
 #### Option D: Cloudflare Workers (Serverless Hosting)
-Since the Hono application structure exports `app` natively, you can deploy it directly as a Cloudflare Worker:
+Since the Hono application structure exports `app` natively (and we have fully decoupled the Node.js server launcher logic into `entry.node.ts`), you can deploy `server.ts` directly as a Cloudflare Worker:
 1. Install Wrangler (Cloudflare's developer CLI) in your project:
    ```bash
    npm install --save-dev wrangler
    ```
-2. Create a `wrangler.toml` configuration file in the project root:
+2. A `wrangler.toml` configuration file is provided inside the `deployment/` directory:
    ```toml
    name = "yfinlib"
    main = "../server.ts"
-   compatibility_date = "2024-03-01"
-   compatibility_flags = [ "nodejs_compat" ]
+   compatibility_date = "2026-07-12"
+   compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_modules" ]
    ```
    > [!NOTE]
-   > The `nodejs_compat` compatibility flag is required because the backend's `yahoo-finance2` library relies on some Node-specific classes and structures.
-3. Deploy the worker to your Cloudflare account:
+   > The `nodejs_compat` and `enable_nodejs_http_modules` compatibility flags are required because the backend's `yahoo-finance2` library relies on Node-specific socket classes and HTTP shims to query Yahoo Finance.
+3. Deploy the worker to your Cloudflare account by passing the config file path:
    ```bash
-   npx wrangler deploy
+   npx wrangler deploy --config deployment/wrangler.toml
    ```
+   *(Or navigate into the `deployment/` folder first and run `npx wrangler deploy`)*.
 
 ---
 

@@ -65,7 +65,8 @@ function App() {
     setIsFetching(true);
     setFetchError(null);
 
-    const symbols = 'GC=F,SI=F,PL=F,PA=F,INR=X,EUR=X,GBP=X,JPY=X,CAD=X,AUD=X,AED=X,CHF=X';
+    const symbols =
+      'GC=F,SI=F,PL=F,PA=F,INR=X,EUR=X,GBP=X,JPY=X,CAD=X,AUD=X,AED=X,CHF=X,CNY=X,RUB=X,IDR=X,ZAR=X';
     const sseUrl = `${HONO_SERVER_URL}/live-quotes?s=${symbols}&i=${refreshInterval * 1000}`;
 
     let eventSource: EventSource | null = null;
@@ -244,6 +245,10 @@ function App() {
               <option value="AUD">AUD (A$)</option>
               <option value="AED">AED (د.إ)</option>
               <option value="CHF">CHF (CHF)</option>
+              <option value="CNY">CNY (元)</option>
+              <option value="RUB">RUB (₽)</option>
+              <option value="IDR">IDR (Rp)</option>
+              <option value="ZAR">ZAR (R)</option>
             </select>
           </div>
 
@@ -262,6 +267,11 @@ function App() {
               <option value="oz">oz (troy)</option>
               <option value="g">g (grams)</option>
               <option value="kg">kg (kilos)</option>
+              <option value="tola">tola (10g)</option>
+              <option value="tael">tael (37.5g)</option>
+              <option value="baht">baht (15.244g)</option>
+              <option value="mesghal">mesghal (4.6083g)</option>
+              <option value="dwt">dwt (pennyweight)</option>
             </select>
           </div>
 

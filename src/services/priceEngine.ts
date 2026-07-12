@@ -1,4 +1,4 @@
-import type { SpotPrices, HistoricalPricePoint } from '../types/metals';
+import type { SpotPrices, HistoricalPricePoint, WeightUnit } from '../types/metals';
 
 // Base prices in USD per troy ounce
 export const BASE_PRICES = {
@@ -146,15 +146,19 @@ export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   };
 }
 
-// Convert prices between ounces, grams, and kilograms
+// Convert prices between ounces, grams, and other popular weight units
 // 1 troy ounce = 31.1034768 grams
-// 1 kilogram = 1000 grams = 32.1507466 troy ounces
-export const WEIGHT_CONVERSIONS = {
+export const WEIGHT_CONVERSIONS: Record<WeightUnit, number> = {
   oz: 1,
   g: 1 / 31.1034768,
   kg: 32.1507466,
+  tola: 10 / 31.1034768, // Metric Tola (10g)
+  tael: 37.5 / 31.1034768, // Chinese Tael (37.5g)
+  baht: 15.244 / 31.1034768, // Thai Baht (15.244g)
+  mesghal: 4.6083 / 31.1034768, // Iranian Mesghal (4.6083g)
+  dwt: 0.05, // Pennyweight (exactly 1/20 of troy oz)
 };
 
-export function getPricePerUnit(pricePerOz: number, unit: 'oz' | 'g' | 'kg'): number {
+export function getPricePerUnit(pricePerOz: number, unit: WeightUnit): number {
   return pricePerOz * WEIGHT_CONVERSIONS[unit];
 }

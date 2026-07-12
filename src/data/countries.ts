@@ -125,6 +125,54 @@ export const COUNTRIES: CountryTaxConfig[] = [
     defaultWeight: getEnvNum('VITE_COUNTRY_CH_DEFAULT_WEIGHT', 1),
     defaultUnit: getEnvStr('VITE_COUNTRY_CH_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
+  {
+    code: 'CN',
+    name: 'China',
+    currency: 'CNY',
+    importDuty: getEnvNum('VITE_COUNTRY_CN_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_CN_VAT_GST', 13.0),
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
+    flag: '🇨🇳',
+    defaultWeight: getEnvNum('VITE_COUNTRY_CN_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_CN_DEFAULT_UNIT', 'tael') as WeightUnit,
+  },
+  {
+    code: 'RU',
+    name: 'Russia',
+    currency: 'RUB',
+    importDuty: getEnvNum('VITE_COUNTRY_RU_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_RU_VAT_GST', 20.0),
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
+    flag: '🇷🇺',
+    defaultWeight: getEnvNum('VITE_COUNTRY_RU_DEFAULT_WEIGHT', 10),
+    defaultUnit: getEnvStr('VITE_COUNTRY_RU_DEFAULT_UNIT', 'g') as WeightUnit,
+  },
+  {
+    code: 'ID',
+    name: 'Indonesia',
+    currency: 'IDR',
+    importDuty: getEnvNum('VITE_COUNTRY_ID_IMPORT_DUTY', 7.5),
+    vatGst: getEnvNum('VITE_COUNTRY_ID_VAT_GST', 11.0),
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
+    flag: '🇮🇩',
+    defaultWeight: getEnvNum('VITE_COUNTRY_ID_DEFAULT_WEIGHT', 10),
+    defaultUnit: getEnvStr('VITE_COUNTRY_ID_DEFAULT_UNIT', 'g') as WeightUnit,
+  },
+  {
+    code: 'ZA',
+    name: 'South Africa',
+    currency: 'ZAR',
+    importDuty: getEnvNum('VITE_COUNTRY_ZA_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_ZA_VAT_GST', 15.0),
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
+    flag: '🇿🇦',
+    defaultWeight: getEnvNum('VITE_COUNTRY_ZA_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_ZA_DEFAULT_UNIT', 'oz') as WeightUnit,
+  },
 ];
 
 export const PURITY_OPTIONS: Record<MetalType, PurityOption[]> = {
@@ -162,6 +210,10 @@ export const EXCHANGE_RATES: Record<CurrencyType, number> = {
   AUD: 1.5,
   AED: 3.67,
   CHF: 0.9,
+  CNY: 7.25,
+  RUB: 90.0,
+  IDR: 16200.0,
+  ZAR: 18.5,
 };
 
 export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
@@ -174,6 +226,10 @@ export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
   AUD: 'A$',
   AED: 'د.إ',
   CHF: 'CHF',
+  CNY: '元',
+  RUB: '₽',
+  IDR: 'Rp',
+  ZAR: 'R',
 };
 
 // Returns whether Gold is VAT exempt in a country (EU standard + UK + CH + UAE + CA + AU)

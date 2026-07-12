@@ -1,8 +1,21 @@
 export type MetalType = 'gold' | 'silver' | 'platinum' | 'palladium';
 
-export type CurrencyType = 'USD' | 'EUR' | 'GBP' | 'INR' | 'JPY' | 'CAD' | 'AUD' | 'AED' | 'CHF';
+export type CurrencyType =
+  | 'USD'
+  | 'EUR'
+  | 'GBP'
+  | 'INR'
+  | 'JPY'
+  | 'CAD'
+  | 'AUD'
+  | 'AED'
+  | 'CHF'
+  | 'CNY'
+  | 'RUB'
+  | 'IDR'
+  | 'ZAR';
 
-export type WeightUnit = 'oz' | 'g' | 'kg';
+export type WeightUnit = 'oz' | 'g' | 'kg' | 'tola' | 'tael' | 'baht' | 'mesghal' | 'dwt';
 
 export interface PurityOption {
   value: number; // 0.0 to 1.0 representation of purity

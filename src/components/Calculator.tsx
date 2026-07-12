@@ -64,12 +64,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
     const spotPriceTarget = spotPriceUSD * exchangeRate;
 
     // Convert weight to ounces based on localWeightUnit
-    let weightInOz = weight;
-    if (localWeightUnit === 'g') {
-      weightInOz = weight * WEIGHT_CONVERSIONS.g;
-    } else if (localWeightUnit === 'kg') {
-      weightInOz = weight * WEIGHT_CONVERSIONS.kg;
-    }
+    const weightInOz = weight * WEIGHT_CONVERSIONS[localWeightUnit];
 
     const baseSpotValue = spotPriceTarget * weightInOz;
 
@@ -190,6 +185,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
               <option value="oz">oz (troy)</option>
               <option value="g">g (grams)</option>
               <option value="kg">kg (kilos)</option>
+              <option value="tola">tola (10g)</option>
+              <option value="tael">tael (37.5g)</option>
+              <option value="baht">baht (15.244g)</option>
+              <option value="mesghal">mesghal (4.6083g)</option>
+              <option value="dwt">dwt (pennyweight)</option>
             </select>
           </div>
 

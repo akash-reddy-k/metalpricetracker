@@ -47,6 +47,16 @@ export const Calculator: React.FC<CalculatorProps> = ({
     setSelectedPurityIndex(0);
   }, [activeMetal]);
 
+  // Reset local weight and unit when country changes
+  useEffect(() => {
+    if (currentCountry.defaultWeight !== undefined) {
+      setWeight(currentCountry.defaultWeight);
+    }
+    if (currentCountry.defaultUnit !== undefined) {
+      setLocalWeightUnit(currentCountry.defaultUnit);
+    }
+  }, [currentCountry]);
+
   // Calculation Logic
   const calculateCosts = (): CalculationResult => {
     const spotPriceUSD = spotPrices[activeMetal];

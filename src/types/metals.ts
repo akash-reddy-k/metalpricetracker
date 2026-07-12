@@ -18,6 +18,8 @@ export interface CountryTaxConfig {
   dealerPremium: number;  // Percentage (e.g. 3.5 for 3.5% average premium)
   fixedMintFeePerOz: number; // Fixed fee in USD per oz
   flag: string;           // emoji representation of the flag
+  defaultWeight?: number;
+  defaultUnit?: WeightUnit;
 }
 
 export interface SpotPrices {

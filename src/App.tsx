@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
 import { BASE_PRICES, simulatePriceTick } from './services/priceEngine';
-import { EXCHANGE_RATES } from './data/countries';
+import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
@@ -124,6 +124,14 @@ function App() {
     return () => clearInterval(intervalId);
   }, [fetchError, refreshInterval]);
 
+  // Sync global weight unit with country's default weight unit when currency changes in header
+  useEffect(() => {
+    const matchingCountry = COUNTRIES.find((c) => c.currency === selectedCurrency);
+    if (matchingCountry && matchingCountry.defaultUnit) {
+      setWeightUnit(matchingCountry.defaultUnit);
+    }
+  }, [selectedCurrency]);
+
   const handleReconnect = () => {
     setReconnectTrigger((prev) => prev + 1);
   };
@@ -159,36 +167,6 @@ function App() {
             </span>
           </div>
 
-          {/* Update Interval */}
-          <div className="currency-selector-wrapper">
-            <label htmlFor="refresh-select-main">Update Rate</label>
-            <select
-              id="refresh-select-main"
-              className="currency-select"
-              value={refreshInterval}
-              onChange={(e) => setRefreshInterval(parseInt(e.target.value, 10))}
-            >
-              <option value={10}>10s (Fast)</option>
-              <option value={30}>30s</option>
-              <option value={60}>60s (Default)</option>
-              <option value={300}>5m</option>
-            </select>
-          </div>
-
-          {/* Weight Unit */}
-          <div className="currency-selector-wrapper">
-            <label htmlFor="unit-select-main">Weight Unit</label>
-            <select
-              id="unit-select-main"
-              className="currency-select"
-              value={weightUnit}
-              onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
-            >
-              <option value="oz">oz (troy)</option>
-              <option value="g">g (grams)</option>
-              <option value="kg">kg (kilos)</option>
-            </select>
-          </div>
 
           {/* Target Currency */}
           <div className="currency-selector-wrapper">
@@ -210,6 +188,39 @@ function App() {
               <option value="CHF">CHF (CHF)</option>
             </select>
           </div>
+
+          {/* Weight Unit */}
+          <div className="currency-selector-wrapper">
+            <label htmlFor="unit-select-main">Weight Unit</label>
+            <select
+                id="unit-select-main"
+                className="currency-select"
+                value={weightUnit}
+                onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
+            >
+                <option value="oz">oz (troy)</option>
+                <option value="g">g (grams)</option>
+                <option value="kg">kg (kilos)</option>
+            </select>
+          </div>
+
+
+            {/* Update Interval */}
+            <div className="currency-selector-wrapper">
+                <label htmlFor="refresh-select-main">Update Rate</label>
+                <select
+                    id="refresh-select-main"
+                    className="currency-select"
+                    value={refreshInterval}
+                    onChange={(e) => setRefreshInterval(parseInt(e.target.value, 10))}
+                >
+                    <option value={30}>30s (Fast)</option>
+                    <option value={60}>60s (Default)</option>
+                    <option value={300}>5m</option>
+                    <option value={600}>10m</option>
+                    <option value={1800}>30m</option>
+                </select>
+            </div>
         </div>
       </header>
 

@@ -1,95 +1,123 @@
-import type { CountryTaxConfig, PurityOption, MetalType, CurrencyType } from '../types/metals';
+import type { CountryTaxConfig, PurityOption, MetalType, CurrencyType, WeightUnit } from '../types/metals';
+
+// Helper to load ENV variable or return default fallback
+const getEnvNum = (key: string, fallback: number): number => {
+  const val = import.meta.env[key];
+  return val !== undefined && val !== '' ? parseFloat(val) : fallback;
+};
+
+const getEnvStr = (key: string, fallback: string): string => {
+  return import.meta.env[key] || fallback;
+};
 
 export const COUNTRIES: CountryTaxConfig[] = [
   {
     code: 'US',
     name: 'United States',
     currency: 'USD',
-    importDuty: 0,
-    vatGst: 6, // Average state sales tax on metals (ranges 0-10%)
+    importDuty: getEnvNum('VITE_COUNTRY_US_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_US_VAT_GST', 6),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇺🇸',
+    defaultWeight: getEnvNum('VITE_COUNTRY_US_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_US_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'IN',
     name: 'India',
     currency: 'INR',
-    importDuty: 15.0, // High custom duty on precious metals
-    vatGst: 3.0,     // GST on gold and silver in India is 3%
+    importDuty: getEnvNum('VITE_COUNTRY_IN_IMPORT_DUTY', 15.0),
+    vatGst: getEnvNum('VITE_COUNTRY_IN_VAT_GST', 3.0),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇮🇳',
+    defaultWeight: getEnvNum('VITE_COUNTRY_IN_DEFAULT_WEIGHT', 10),
+    defaultUnit: getEnvStr('VITE_COUNTRY_IN_DEFAULT_UNIT', 'g') as WeightUnit,
   },
   {
     code: 'GB',
     name: 'United Kingdom',
     currency: 'GBP',
-    importDuty: 0,
-    vatGst: 20, // 20% standard VAT, but Gold is exempt (handled in formula)
+    importDuty: getEnvNum('VITE_COUNTRY_GB_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_GB_VAT_GST', 20),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇬🇧',
+    defaultWeight: getEnvNum('VITE_COUNTRY_GB_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_GB_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'DE',
     name: 'Germany',
     currency: 'EUR',
-    importDuty: 0,
-    vatGst: 19, // 19% standard VAT, Gold is exempt (handled in formula)
+    importDuty: getEnvNum('VITE_COUNTRY_DE_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_DE_VAT_GST', 19),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇩🇪',
+    defaultWeight: getEnvNum('VITE_COUNTRY_DE_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_DE_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'CA',
     name: 'Canada',
     currency: 'CAD',
-    importDuty: 0,
-    vatGst: 0, // Investment grade precious metals are exempt from GST/HST
+    importDuty: getEnvNum('VITE_COUNTRY_CA_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_CA_VAT_GST', 0),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇨🇦',
+    defaultWeight: getEnvNum('VITE_COUNTRY_CA_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_CA_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'AU',
     name: 'Australia',
     currency: 'AUD',
-    importDuty: 0,
-    vatGst: 0, // Investment-grade metals are GST-free
+    importDuty: getEnvNum('VITE_COUNTRY_AU_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_AU_VAT_GST', 0),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇦🇺',
+    defaultWeight: getEnvNum('VITE_COUNTRY_AU_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_AU_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'JP',
     name: 'Japan',
     currency: 'JPY',
-    importDuty: 0,
-    vatGst: 10, // 10% consumption tax applies to all metals
+    importDuty: getEnvNum('VITE_COUNTRY_JP_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_JP_VAT_GST', 10),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇯🇵',
+    defaultWeight: getEnvNum('VITE_COUNTRY_JP_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_JP_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'AE',
     name: 'United Arab Emirates',
     currency: 'AED',
-    importDuty: 5, // 5% tariff on jewelry, but investment metals are 0%
-    vatGst: 5,     // 5% VAT (investment gold is exempt)
+    importDuty: getEnvNum('VITE_COUNTRY_AE_IMPORT_DUTY', 5),
+    vatGst: getEnvNum('VITE_COUNTRY_AE_VAT_GST', 5),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇦🇪',
+    defaultWeight: getEnvNum('VITE_COUNTRY_AE_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_AE_DEFAULT_UNIT', 'oz') as WeightUnit,
   },
   {
     code: 'CH',
     name: 'Switzerland',
     currency: 'CHF',
-    importDuty: 0,
-    vatGst: 8.1, // 8.1% VAT (standard rate, gold is exempt)
+    importDuty: getEnvNum('VITE_COUNTRY_CH_IMPORT_DUTY', 0),
+    vatGst: getEnvNum('VITE_COUNTRY_CH_VAT_GST', 8.1),
     dealerPremium: 0,
     fixedMintFeePerOz: 0,
     flag: '🇨🇭',
+    defaultWeight: getEnvNum('VITE_COUNTRY_CH_DEFAULT_WEIGHT', 1),
+    defaultUnit: getEnvStr('VITE_COUNTRY_CH_DEFAULT_UNIT', 'oz') as WeightUnit,
   }
 ];
 
@@ -144,6 +172,6 @@ export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
 
 // Returns whether Gold is VAT exempt in a country (EU standard + UK + CH + UAE + CA + AU)
 export function isGoldVatExempt(countryCode: string): boolean {
-  const exemptCountries = ['GB', 'DE', 'CH', 'CA', 'AU', 'AE'];
+  const exemptCountries = [];
   return exemptCountries.includes(countryCode);
 }

@@ -81,8 +81,8 @@ Since the Hono application structure exports `app` natively, you can deploy it d
    ```
 2. Create a `wrangler.toml` configuration file in the project root:
    ```toml
-   name = "metals-backend"
-   main = "server.ts"
+   name = "yfinlib"
+   main = "../server.ts"
    compatibility_date = "2024-03-01"
    compatibility_flags = [ "nodejs_compat" ]
    ```

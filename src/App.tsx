@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { SpotPrices, MetalType, CurrencyType } from './types/metals';
+import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
 import { BASE_PRICES, simulatePriceTick } from './services/priceEngine';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
@@ -23,6 +23,7 @@ function App() {
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType>('USD');
   const [activeMetal, setActiveMetal] = useState<MetalType>('gold');
   const [refreshInterval, setRefreshInterval] = useState<number>(60); // seconds
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
   const [reconnectTrigger, setReconnectTrigger] = useState<number>(0);
 
   // Fetch status
@@ -159,6 +160,21 @@ function App() {
             </select>
           </div>
 
+          {/* Weight Unit */}
+          <div className="currency-selector-wrapper">
+            <label htmlFor="unit-select-main">Weight Unit</label>
+            <select
+              id="unit-select-main"
+              className="currency-select"
+              value={weightUnit}
+              onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
+            >
+              <option value="oz">oz (troy)</option>
+              <option value="g">g (grams)</option>
+              <option value="kg">kg (kilos)</option>
+            </select>
+          </div>
+
           {/* Target Currency */}
           <div className="currency-selector-wrapper">
             <label htmlFor="currency-select-main">Currency</label>
@@ -191,6 +207,7 @@ function App() {
           selectedCurrency={selectedCurrency}
           activeMetal={activeMetal}
           setActiveMetal={setActiveMetal}
+          weightUnit={weightUnit}
         />
 
         {/* 2. Interactive Charting Overlay */}
@@ -207,6 +224,7 @@ function App() {
           spotPrices={prices}
           selectedCurrency={selectedCurrency}
           setSelectedCurrency={setSelectedCurrency}
+          weightUnit={weightUnit}
         />
 
       </main>

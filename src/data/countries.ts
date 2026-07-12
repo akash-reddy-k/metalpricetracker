@@ -7,8 +7,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'USD',
     importDuty: 0,
     vatGst: 6, // Average state sales tax on metals (ranges 0-10%)
-    dealerPremium: 4.5,
-    fixedMintFeePerOz: 2.5,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇺🇸',
   },
   {
@@ -17,8 +17,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'INR',
     importDuty: 15.0, // High custom duty on precious metals
     vatGst: 3.0,     // GST on gold and silver in India is 3%
-    dealerPremium: 2.5,
-    fixedMintFeePerOz: 1.5,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇮🇳',
   },
   {
@@ -27,8 +27,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'GBP',
     importDuty: 0,
     vatGst: 20, // 20% standard VAT, but Gold is exempt (handled in formula)
-    dealerPremium: 5.0,
-    fixedMintFeePerOz: 3.0,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇬🇧',
   },
   {
@@ -37,8 +37,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'EUR',
     importDuty: 0,
     vatGst: 19, // 19% standard VAT, Gold is exempt (handled in formula)
-    dealerPremium: 4.0,
-    fixedMintFeePerOz: 2.8,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇩🇪',
   },
   {
@@ -47,8 +47,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'CAD',
     importDuty: 0,
     vatGst: 0, // Investment grade precious metals are exempt from GST/HST
-    dealerPremium: 5.2,
-    fixedMintFeePerOz: 3.2,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇨🇦',
   },
   {
@@ -57,8 +57,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'AUD',
     importDuty: 0,
     vatGst: 0, // Investment-grade metals are GST-free
-    dealerPremium: 4.8,
-    fixedMintFeePerOz: 2.9,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇦🇺',
   },
   {
@@ -67,8 +67,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'JPY',
     importDuty: 0,
     vatGst: 10, // 10% consumption tax applies to all metals
-    dealerPremium: 3.5,
-    fixedMintFeePerOz: 2.0,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇯🇵',
   },
   {
@@ -77,8 +77,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'AED',
     importDuty: 5, // 5% tariff on jewelry, but investment metals are 0%
     vatGst: 5,     // 5% VAT (investment gold is exempt)
-    dealerPremium: 2.0,
-    fixedMintFeePerOz: 1.2,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇦🇪',
   },
   {
@@ -87,8 +87,8 @@ export const COUNTRIES: CountryTaxConfig[] = [
     currency: 'CHF',
     importDuty: 0,
     vatGst: 8.1, // 8.1% VAT (standard rate, gold is exempt)
-    dealerPremium: 3.8,
-    fixedMintFeePerOz: 2.5,
+    dealerPremium: 0,
+    fixedMintFeePerOz: 0,
     flag: '🇨🇭',
   }
 ];

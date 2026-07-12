@@ -51,6 +51,7 @@ export interface CalculationResult {
   baseSpotValue: number; // raw spot price of weight in target currency
   rawMetalValue: number; // adjusted for purity: spotPriceTotal * purity
   importDutyValue: number;
+  makingChargesValue: number;
   vatGstValue: number;
   dealerPremiumValue: number;
   finalPrice: number;

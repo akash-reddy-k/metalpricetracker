@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import type { SpotPrices, MetalType, CurrencyType } from '../types/metals';
+import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
 import { EXCHANGE_RATES } from '../data/countries';
 import { getPricePerUnit, BASE_PRICES } from '../services/priceEngine';
 import { Sparkles, Activity } from 'lucide-react';
@@ -9,6 +9,7 @@ interface LivePriceCardsProps {
   selectedCurrency: CurrencyType;
   activeMetal: MetalType;
   setActiveMetal: (metal: MetalType) => void;
+  weightUnit: WeightUnit;
 }
 
 const METAL_DETAILS: Record<MetalType, { 
@@ -58,6 +59,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
   selectedCurrency,
   activeMetal,
   setActiveMetal,
+  weightUnit,
 }) => {
   const previousPrices = useRef<SpotPrices | null>(null);
   const [pulseStates, setPulseStates] = useState<Record<MetalType, 'up' | 'down' | null>>({
@@ -167,9 +169,9 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
 
             <div className="price-primary">
               <span className="price-main-val">
-                {formatPrice(currentPriceUSD, 1)}
+                {formatPrice(currentPriceUSD, getPricePerUnit(1, weightUnit))}
               </span>
-              <span className="price-unit-oz">/ oz</span>
+              <span className="price-unit-oz">/ {weightUnit}</span>
             </div>
 
             <div className="price-change-row">
@@ -180,14 +182,20 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
             </div>
 
             <div className="price-breakdown-mini">
-              <div className="mini-row">
-                <span className="mini-lbl">Per Gram</span>
-                <span className="mini-val">{formatPrice(currentPriceUSD, getPricePerUnit(1, 'g'))}</span>
-              </div>
-              <div className="mini-row">
-                <span className="mini-lbl">Per Kilo</span>
-                <span className="mini-val">{formatPrice(currentPriceUSD, getPricePerUnit(1, 'kg'))}</span>
-              </div>
+              {((unit: WeightUnit) => {
+                const secondary = unit === 'oz' 
+                  ? [{ label: 'Per Gram', u: 'g' as WeightUnit }, { label: 'Per Kilo', u: 'kg' as WeightUnit }]
+                  : unit === 'g'
+                  ? [{ label: 'Per Ounce', u: 'oz' as WeightUnit }, { label: 'Per Kilo', u: 'kg' as WeightUnit }]
+                  : [{ label: 'Per Ounce', u: 'oz' as WeightUnit }, { label: 'Per Gram', u: 'g' as WeightUnit }];
+                
+                return secondary.map((sec) => (
+                  <div key={sec.u} className="mini-row">
+                    <span className="mini-lbl">{sec.label}</span>
+                    <span className="mini-val">{formatPrice(currentPriceUSD, getPricePerUnit(1, sec.u))}</span>
+                  </div>
+                ));
+              })(weightUnit)}
             </div>
 
             {pulse && (

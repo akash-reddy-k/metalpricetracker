@@ -1,13 +1,14 @@
 import React, { useState, useMemo } from 'react';
-import type { MetalType, CurrencyType, CountryTaxConfig } from '../types/metals';
+import type { MetalType, CurrencyType, CountryTaxConfig, WeightUnit } from '../types/metals';
 import { COUNTRIES, CURRENCY_SYMBOLS, EXCHANGE_RATES, isGoldVatExempt } from '../data/countries';
-import { generateHistoricalData } from '../services/priceEngine';
+import { generateHistoricalData, WEIGHT_CONVERSIONS } from '../services/priceEngine';
 import { TrendingUp, Percent, ArrowLeftRight, Layers } from 'lucide-react';
 
 interface AnalyticsChartProps {
   activeMetal: MetalType;
   selectedCurrency: CurrencyType;
   spotPrices: { gold: number; silver: number; platinum: number; palladium: number; timestamp: number };
+  weightUnit: WeightUnit;
 }
 
 const TIMEFRAMES: Array<{ label: string; value: '24h' | '7d' | '30d' | '1y' | '5y' }> = [
@@ -22,6 +23,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   activeMetal,
   selectedCurrency,
   spotPrices,
+  weightUnit,
 }) => {
   const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d' | '1y' | '5y'>('30d');
   
@@ -78,13 +80,14 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   // Convert history data points
   const chartPoints = useMemo(() => {
     const activeRate = EXCHANGE_RATES[selectedCurrency];
+    const unitMultiplier = WEIGHT_CONVERSIONS[weightUnit];
     
     return historyData.map((pt) => {
       const spotUSD = pt.prices[activeMetal];
-      const spotPriceActive = spotUSD * activeRate;
+      const spotPriceActive = spotUSD * activeRate * unitMultiplier;
       
-      const priceA = getFinalPriceInActiveCurrency(spotUSD, countryA);
-      const priceB = compareEnabled ? getFinalPriceInActiveCurrency(spotUSD, countryB) : 0;
+      const priceA = getFinalPriceInActiveCurrency(spotUSD, countryA) * unitMultiplier;
+      const priceB = compareEnabled ? getFinalPriceInActiveCurrency(spotUSD, countryB) * unitMultiplier : 0;
 
       return {
         timestamp: pt.timestamp,
@@ -93,7 +96,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         priceB,
       };
     });
-  }, [historyData, countryA, countryB, compareEnabled, activeMetal, selectedCurrency]);
+  }, [historyData, countryA, countryB, compareEnabled, activeMetal, selectedCurrency, weightUnit]);
 
   // Chart bounds & scales
   const chartWidth = 780;
@@ -497,7 +500,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             <div className="tooltip-divider"></div>
             
             <div className="tooltip-row spot">
-              <span>Spot price:</span>
+              <span>Spot Price ({weightUnit}):</span>
               <strong>
                 {activeSymbol}
                 {hoveredPoint.spotPrice.toLocaleString(undefined, {
@@ -510,7 +513,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             {compareEnabled ? (
               <>
                 <div className="tooltip-row country-a-val">
-                  <span>{countryA.flag} {countryA.name} Cost:</span>
+                  <span>{countryA.flag} {countryA.name} ({weightUnit}):</span>
                   <strong>
                     {activeSymbol}
                     {hoveredPoint.priceA.toLocaleString(undefined, {
@@ -521,7 +524,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 </div>
 
                 <div className="tooltip-row country-b-val">
-                  <span>{countryB.flag} {countryB.name} Cost:</span>
+                  <span>{countryB.flag} {countryB.name} ({weightUnit}):</span>
                   <strong>
                     {activeSymbol}
                     {hoveredPoint.priceB.toLocaleString(undefined, {
@@ -570,7 +573,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
               </>
             ) : (
               <div className="tooltip-row">
-                <span style={{ color: metalColor }}>{activeMetal.toUpperCase()} Ounce:</span>
+                <span style={{ color: metalColor }}>{activeMetal.toUpperCase()} ({weightUnit}):</span>
                 <strong>
                   {activeSymbol}
                   {hoveredPoint.priceA.toLocaleString(undefined, {

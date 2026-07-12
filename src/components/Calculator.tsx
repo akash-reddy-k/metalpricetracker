@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react';
 import type { MetalType, CurrencyType, WeightUnit, CalculationResult } from '../types/metals';
 import { COUNTRIES, PURITY_OPTIONS, EXCHANGE_RATES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
 import { WEIGHT_CONVERSIONS } from '../services/priceEngine';
-import { Calculator as CalcIcon, FileText, Info, Award, Globe, Scale } from 'lucide-react';
+import { Calculator as CalcIcon, FileText, Info, Award, Scale } from 'lucide-react';
 
 interface CalculatorProps {
   activeMetal: MetalType;
   setActiveMetal: (metal: MetalType) => void;
   spotPrices: { gold: number; silver: number; platinum: number; palladium: number };
   selectedCurrency: CurrencyType;
-  setSelectedCurrency: (currency: CurrencyType) => void;
   weightUnit: WeightUnit;
 }
 
@@ -18,11 +17,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
   setActiveMetal,
   spotPrices,
   selectedCurrency,
-  setSelectedCurrency,
   weightUnit,
 }) => {
-  const [selectedCountryCode, setSelectedCountryCode] = useState<string>('US');
   const [weight, setWeight] = useState<number>(1);
+  const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>(weightUnit);
   
   // Purity option index
   const purities = PURITY_OPTIONS[activeMetal];
@@ -35,20 +33,12 @@ export const Calculator: React.FC<CalculatorProps> = ({
   // Custom fixed mint/processing fee (only for bullion)
   const [customMintFee, setCustomMintFee] = useState<string>('');
 
-  const currentCountry = COUNTRIES.find((c) => c.code === selectedCountryCode) || COUNTRIES[0];
+  const currentCountry = COUNTRIES.find((c) => c.currency === selectedCurrency) || COUNTRIES[0];
 
-  // Sync country currency with selected currency
+  // Sync local weight unit when global header weight unit changes
   useEffect(() => {
-    setSelectedCurrency(currentCountry.currency);
-  }, [selectedCountryCode, currentCountry]);
-
-  // Sync country when selectedCurrency changes from the header
-  useEffect(() => {
-    const matchingCountry = COUNTRIES.find((c) => c.currency === selectedCurrency);
-    if (matchingCountry && matchingCountry.code !== selectedCountryCode) {
-      setSelectedCountryCode(matchingCountry.code);
-    }
-  }, [selectedCurrency]);
+    setLocalWeightUnit(weightUnit);
+  }, [weightUnit]);
 
   // Sync purity index when metal changes
   useEffect(() => {
@@ -61,11 +51,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
     const exchangeRate = EXCHANGE_RATES[selectedCurrency];
     const spotPriceTarget = spotPriceUSD * exchangeRate;
 
-    // Convert weight to ounces
+    // Convert weight to ounces based on localWeightUnit
     let weightInOz = weight;
-    if (weightUnit === 'g') {
+    if (localWeightUnit === 'g') {
       weightInOz = weight * WEIGHT_CONVERSIONS.g;
-    } else if (weightUnit === 'kg') {
+    } else if (localWeightUnit === 'kg') {
       weightInOz = weight * WEIGHT_CONVERSIONS.kg;
     }
 
@@ -86,10 +76,10 @@ export const Calculator: React.FC<CalculatorProps> = ({
     let makingChargesValue = 0;
 
     if (productType === 'bullion') {
-      // Bullion Premium adds country percentage premium + fixed mint fee per oz (both configurable by user)
-      const defaultMintFeeTarget = currentCountry.fixedMintFeePerOz * exchangeRate;
-      const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFeeTarget;
-      dealerPremiumValue = rawMetalValue * (chargesPercent / 100) + (mintFeeTarget * weightInOz);
+      // Bullion Premium adds country percentage premium + fixed mint fee per localWeightUnit (both configurable by user)
+      const defaultMintFee = currentCountry.fixedMintFeePerOz * exchangeRate * WEIGHT_CONVERSIONS[localWeightUnit];
+      const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFee;
+      dealerPremiumValue = rawMetalValue * (chargesPercent / 100) + (mintFeeTarget * weight);
     } else {
       // Jewellery Making Charges adds custom percentage fee only
       makingChargesValue = rawMetalValue * (chargesPercent / 100);
@@ -107,7 +97,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
     return {
       metal: activeMetal,
       weight,
-      weightUnit,
+      weightUnit: localWeightUnit,
       purity: activePurity,
       purityLabel: purities[selectedPurityIndex]?.label ?? 'Fine',
       currency: selectedCurrency,
@@ -126,6 +116,8 @@ export const Calculator: React.FC<CalculatorProps> = ({
   };
 
   const chargesPercent = dealerCharges !== '' ? parseFloat(dealerCharges) || 0 : (productType === 'bullion' ? currentCountry.dealerPremium : 0);
+  const defaultMintFee = currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency] * WEIGHT_CONVERSIONS[localWeightUnit];
+  const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFee;
   const res = calculateCosts();
   const symbol = CURRENCY_SYMBOLS[selectedCurrency];
 
@@ -154,21 +146,19 @@ export const Calculator: React.FC<CalculatorProps> = ({
         <p className="panel-subtitle">Compute final retail prices including global tariffs, state VAT/GST, and premiums.</p>
 
         <div className="calc-inputs-grid">
-          {/* Target Country */}
+          {/* Weight Unit Selector - replaces Country */}
           <div className="input-group">
-            <label htmlFor="calc-country">
-              <Globe size={14} /> Destination Country
+            <label htmlFor="calc-unit">
+              Weight Unit
             </label>
             <select
-              id="calc-country"
-              value={selectedCountryCode}
-              onChange={(e) => setSelectedCountryCode(e.target.value)}
+              id="calc-unit"
+              value={localWeightUnit}
+              onChange={(e) => setLocalWeightUnit(e.target.value as WeightUnit)}
             >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {c.name} ({c.currency})
-                </option>
-              ))}
+              <option value="oz">oz (troy)</option>
+              <option value="g">g (grams)</option>
+              <option value="kg">kg (kilos)</option>
             </select>
           </div>
 
@@ -257,11 +247,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
           {/* Mint Fee / Handling override (Bullion only) */}
           {productType === 'bullion' && (
             <div className="input-group">
-              <label htmlFor="calc-mint-fee">Mint Fee / Markup ({symbol}/oz)</label>
+              <label htmlFor="calc-mint-fee">Mint Fee / Markup ({symbol}/{localWeightUnit})</label>
               <input
                 id="calc-mint-fee"
                 type="number"
-                placeholder={`${(currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency]).toFixed(2)} (Default)`}
+                placeholder={`${defaultMintFee.toFixed(2)} (Default)`}
                 value={customMintFee}
                 min="0"
                 step="0.01"
@@ -281,7 +271,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <span>Import Duty: <strong>{currentCountry.importDuty}%</strong></span>
             <span>VAT/GST: <strong>{activeMetal === 'gold' && isGoldVatExempt(currentCountry.code) && productType === 'bullion' ? '0% (Exempt)' : `${currentCountry.vatGst}%`}</strong></span>
             {productType === 'bullion' ? (
-              <span>Mint Premium: <strong>{dealerCharges !== '' ? `${dealerCharges}%` : `${currentCountry.dealerPremium}%`} + {symbol}{(customMintFee !== '' ? parseFloat(customMintFee) || 0 : currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency]).toFixed(2)}/oz</strong></span>
+              <span>Mint Premium: <strong>{dealerCharges !== '' ? `${dealerCharges}%` : `${currentCountry.dealerPremium}%`} + {symbol}{mintFeeTarget.toFixed(2)}/{localWeightUnit}</strong></span>
             ) : (
               <span>Making Charges: <strong>{dealerCharges !== '' ? `${dealerCharges}%` : '0%'}</strong></span>
             )}
@@ -349,7 +339,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
                 <span>Dealer & Mint Premium</span>
                 <small>
                   {chargesPercent}% markup + {symbol}
-                  {(customMintFee !== '' ? parseFloat(customMintFee) || 0 : currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency]).toFixed(2)}/oz fee
+                  {mintFeeTarget.toFixed(2)}/{localWeightUnit} fee
                 </small>
               </div>
               <span>{formatCost(res.dealerPremiumValue)}</span>

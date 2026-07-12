@@ -215,6 +215,7 @@ function App() {
           activeMetal={activeMetal}
           selectedCurrency={selectedCurrency}
           spotPrices={prices}
+          weightUnit={weightUnit}
         />
 
         {/* 3. Global Tax Cost Localization Calculator */}
@@ -223,7 +224,6 @@ function App() {
           setActiveMetal={setActiveMetal}
           spotPrices={prices}
           selectedCurrency={selectedCurrency}
-          setSelectedCurrency={setSelectedCurrency}
           weightUnit={weightUnit}
         />
 

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import type { MetalType, CurrencyType, CountryTaxConfig, WeightUnit } from '../types/metals';
-import { COUNTRIES, CURRENCY_SYMBOLS, EXCHANGE_RATES, isGoldVatExempt } from '../data/countries';
+import { COUNTRIES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
 import { generateHistoricalData, WEIGHT_CONVERSIONS } from '../services/priceEngine';
 import { TrendingUp, Percent, ArrowLeftRight, Layers } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface AnalyticsChartProps {
   selectedCurrency: CurrencyType;
   spotPrices: { gold: number; silver: number; platinum: number; palladium: number; timestamp: number };
   weightUnit: WeightUnit;
+  exchangeRates: Record<CurrencyType, number>;
 }
 
 const TIMEFRAMES: Array<{ label: string; value: '24h' | '7d' | '30d' | '1y' | '5y' }> = [
@@ -24,6 +25,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   selectedCurrency,
   spotPrices,
   weightUnit,
+  exchangeRates,
 }) => {
   const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d' | '1y' | '5y'>('30d');
   
@@ -50,7 +52,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     country: CountryTaxConfig
   ): number => {
     // 1. Convert spot USD to country currency
-    const rateToCountry = EXCHANGE_RATES[country.currency];
+    const rateToCountry = exchangeRates[country.currency];
     const spotPriceCountry = spotPriceUSD * rateToCountry;
 
     // 2. Adjust for purity (compare 24k/fine 99.9% as benchmark for arbitrage)
@@ -71,7 +73,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     const finalPriceCountry = rawValueCountry + importDuty + vatGst + premium;
 
     // 6. Convert final price back to the dashboard's active currency
-    const rateToActive = EXCHANGE_RATES[selectedCurrency];
+    const rateToActive = exchangeRates[selectedCurrency];
     const finalPriceActiveCurrency = (finalPriceCountry / rateToCountry) * rateToActive;
 
     return finalPriceActiveCurrency;
@@ -79,7 +81,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
 
   // Convert history data points
   const chartPoints = useMemo(() => {
-    const activeRate = EXCHANGE_RATES[selectedCurrency];
+    const activeRate = exchangeRates[selectedCurrency];
     const unitMultiplier = WEIGHT_CONVERSIONS[weightUnit];
     
     return historyData.map((pt) => {

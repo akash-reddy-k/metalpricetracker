@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
 import { BASE_PRICES, simulatePriceTick } from './services/priceEngine';
+import { EXCHANGE_RATES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
@@ -26,6 +27,9 @@ function App() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
   const [reconnectTrigger, setReconnectTrigger] = useState<number>(0);
 
+  // Dynamic exchange rates from Yahoo Finance
+  const [exchangeRates, setExchangeRates] = useState<Record<CurrencyType, number>>(EXCHANGE_RATES);
+
   // Fetch status
   const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -36,7 +40,7 @@ function App() {
     setIsFetching(true);
     setFetchError(null);
 
-    const symbols = 'GC=F,SI=F,PL=F,PA=F';
+    const symbols = 'GC=F,SI=F,PL=F,PA=F,INR=X,EUR=X,GBP=X,JPY=X,CAD=X,AUD=X,AED=X,CHF=X';
     const sseUrl = `${HONO_SERVER_URL}/live-quotes?s=${symbols}&i=${refreshInterval * 1000}`;
     
     let eventSource: EventSource | null = null;
@@ -60,14 +64,25 @@ function App() {
           const quote = JSON.parse(event.data);
           const { symbol, price } = quote;
           if (price && typeof price === 'number') {
-            setPrices((prev) => {
-              const next = { ...prev, timestamp: Date.now() };
-              if (symbol === 'GC=F') next.gold = price;
-              if (symbol === 'SI=F') next.silver = price;
-              if (symbol === 'PL=F') next.platinum = price;
-              if (symbol === 'PA=F') next.palladium = price;
-              return next;
-            });
+            if (symbol.endsWith('=X')) {
+              // Parse currency ticker e.g. "INR=X"
+              const currency = symbol.split('=')[0] as CurrencyType;
+              if (currency) {
+                setExchangeRates((prev) => ({
+                  ...prev,
+                  [currency]: price
+                }));
+              }
+            } else {
+              setPrices((prev) => {
+                const next = { ...prev, timestamp: Date.now() };
+                if (symbol === 'GC=F') next.gold = price;
+                if (symbol === 'SI=F') next.silver = price;
+                if (symbol === 'PL=F') next.platinum = price;
+                if (symbol === 'PA=F') next.palladium = price;
+                return next;
+              });
+            }
             setLastUpdated(new Date());
           }
         } catch (parseErr) {
@@ -208,6 +223,7 @@ function App() {
           activeMetal={activeMetal}
           setActiveMetal={setActiveMetal}
           weightUnit={weightUnit}
+          exchangeRates={exchangeRates}
         />
 
         {/* 2. Interactive Charting Overlay */}
@@ -216,6 +232,7 @@ function App() {
           selectedCurrency={selectedCurrency}
           spotPrices={prices}
           weightUnit={weightUnit}
+          exchangeRates={exchangeRates}
         />
 
         {/* 3. Global Tax Cost Localization Calculator */}
@@ -225,6 +242,7 @@ function App() {
           spotPrices={prices}
           selectedCurrency={selectedCurrency}
           weightUnit={weightUnit}
+          exchangeRates={exchangeRates}
         />
 
       </main>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import type { MetalType, CurrencyType, WeightUnit, CalculationResult } from '../types/metals';
-import { COUNTRIES, PURITY_OPTIONS, EXCHANGE_RATES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
+import { COUNTRIES, PURITY_OPTIONS, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
 import { WEIGHT_CONVERSIONS } from '../services/priceEngine';
 import { Calculator as CalcIcon, FileText, Info, Award, Scale } from 'lucide-react';
 
@@ -10,6 +10,7 @@ interface CalculatorProps {
   spotPrices: { gold: number; silver: number; platinum: number; palladium: number };
   selectedCurrency: CurrencyType;
   weightUnit: WeightUnit;
+  exchangeRates: Record<CurrencyType, number>;
 }
 
 export const Calculator: React.FC<CalculatorProps> = ({
@@ -18,6 +19,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
   spotPrices,
   selectedCurrency,
   weightUnit,
+  exchangeRates,
 }) => {
   const [weight, setWeight] = useState<number>(1);
   const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>(weightUnit);
@@ -48,7 +50,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
   // Calculation Logic
   const calculateCosts = (): CalculationResult => {
     const spotPriceUSD = spotPrices[activeMetal];
-    const exchangeRate = EXCHANGE_RATES[selectedCurrency];
+    const exchangeRate = exchangeRates[selectedCurrency];
     const spotPriceTarget = spotPriceUSD * exchangeRate;
 
     // Convert weight to ounces based on localWeightUnit
@@ -116,7 +118,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
   };
 
   const chargesPercent = dealerCharges !== '' ? parseFloat(dealerCharges) || 0 : (productType === 'bullion' ? currentCountry.dealerPremium : 0);
-  const defaultMintFee = currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency] * WEIGHT_CONVERSIONS[localWeightUnit];
+  const defaultMintFee = currentCountry.fixedMintFeePerOz * exchangeRates[selectedCurrency] * WEIGHT_CONVERSIONS[localWeightUnit];
   const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFee;
   const res = calculateCosts();
   const symbol = CURRENCY_SYMBOLS[selectedCurrency];

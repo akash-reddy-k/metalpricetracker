@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
-import { EXCHANGE_RATES } from '../data/countries';
 import { getPricePerUnit, BASE_PRICES } from '../services/priceEngine';
 import { Sparkles, Activity } from 'lucide-react';
 
@@ -10,6 +9,7 @@ interface LivePriceCardsProps {
   activeMetal: MetalType;
   setActiveMetal: (metal: MetalType) => void;
   weightUnit: WeightUnit;
+  exchangeRates: Record<CurrencyType, number>;
 }
 
 const METAL_DETAILS: Record<MetalType, { 
@@ -60,6 +60,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
   activeMetal,
   setActiveMetal,
   weightUnit,
+  exchangeRates,
 }) => {
   const previousPrices = useRef<SpotPrices | null>(null);
   const [pulseStates, setPulseStates] = useState<Record<MetalType, 'up' | 'down' | null>>({
@@ -69,7 +70,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
     palladium: null,
   });
 
-  const currencyRate = EXCHANGE_RATES[selectedCurrency];
+  const currencyRate = exchangeRates[selectedCurrency];
 
   useEffect(() => {
     if (!previousPrices.current) {

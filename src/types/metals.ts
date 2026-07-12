@@ -58,6 +58,6 @@ export interface CalculationResult {
 }
 
 export interface ApiConfig {
-  provider: 'simulated' | 'goldapi' | 'metalpriceapi';
-  apiKey: string;
+  provider: 'simulated' | 'hono';
+  serverUrl: string; // e.g. "http://localhost:3000"
 }

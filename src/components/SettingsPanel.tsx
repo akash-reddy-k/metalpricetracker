@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { ApiConfig } from '../types/metals';
-import { Settings, Check, AlertCircle, RefreshCw, Key, Shield } from 'lucide-react';
+import { Settings, Check, AlertCircle, RefreshCw, Globe, Shield } from 'lucide-react';
 
 interface SettingsPanelProps {
   apiConfig: ApiConfig;
@@ -23,28 +23,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
   isFetching,
   triggerManualFetch,
 }) => {
-  const [provider, setProvider] = useState<'simulated' | 'goldapi' | 'metalpriceapi'>(apiConfig.provider);
-  const [apiKey, setApiKey] = useState<string>(apiConfig.apiKey);
+  const [provider, setProvider] = useState<'simulated' | 'hono'>(apiConfig.provider);
+  const [serverUrl, setServerUrl] = useState<string>(apiConfig.serverUrl);
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setApiConfig({ provider, apiKey });
+    setApiConfig({ provider, serverUrl });
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
-    
-    // Automatically trigger fetch when settings change
-    if (provider !== 'simulated' && apiKey) {
-      setTimeout(() => triggerManualFetch(), 100);
-    }
   };
 
-  const handleProviderChange = (prov: 'simulated' | 'goldapi' | 'metalpriceapi') => {
+  const handleProviderChange = (prov: 'simulated' | 'hono') => {
     setProvider(prov);
-    if (prov === 'simulated') {
-      setApiKey('');
-    }
   };
 
   return (
@@ -55,9 +47,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
         title="Toggle Price Feed & API Configuration"
       >
         <Settings size={18} className={isFetching ? 'spinning-sparkle' : ''} />
-        <span>Feed Settings</span>
+        <span>Price Feed Settings</span>
         {apiConfig.provider !== 'simulated' && (
-          <span className="live-pill">LIVE</span>
+          <span className="live-pill">YAHOO LIVE</span>
         )}
       </button>
 
@@ -68,7 +60,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
               <Settings size={16} /> Data Feed Configuration
             </h3>
             <span className="api-status-badge">
-              {apiConfig.provider === 'simulated' ? 'Mode: Simulated' : 'Mode: Live API'}
+              {apiConfig.provider === 'simulated' ? 'Mode: Simulated Ticker' : 'Mode: Hono SSE Stream'}
             </span>
           </div>
 
@@ -82,57 +74,50 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                   className={`prov-btn ${provider === 'simulated' ? 'active' : ''}`}
                   onClick={() => handleProviderChange('simulated')}
                 >
-                  Simulation (No Key)
+                  Simulation (Offline Mode)
                 </button>
                 <button
                   type="button"
-                  className={`prov-btn ${provider === 'goldapi' ? 'active' : ''}`}
-                  onClick={() => handleProviderChange('goldapi')}
+                  className={`prov-btn ${provider === 'hono' ? 'active' : ''}`}
+                  onClick={() => handleProviderChange('hono')}
                 >
-                  GoldAPI.io
-                </button>
-                <button
-                  type="button"
-                  className={`prov-btn ${provider === 'metalpriceapi' ? 'active' : ''}`}
-                  onClick={() => handleProviderChange('metalpriceapi')}
-                >
-                  MetalpriceAPI.com
+                  Yahoo Finance (Local Hono Server)
                 </button>
               </div>
             </div>
 
-            {/* API Key Input (if live) */}
-            {provider !== 'simulated' && (
+            {/* Hono Server URL (if selected) */}
+            {provider === 'hono' && (
               <div className="form-group fade-in">
-                <label htmlFor="settings-apikey" className="label-with-icon">
-                  <Key size={12} /> Enter API Access Token / Key
+                <label htmlFor="settings-serverurl" className="label-with-icon">
+                  <Globe size={12} /> Hono Server Base URL
                 </label>
                 <input
-                  id="settings-apikey"
-                  type="password"
-                  placeholder={`Enter your ${provider === 'goldapi' ? 'GoldAPI' : 'MetalpriceAPI'} token`}
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
+                  id="settings-serverurl"
+                  type="url"
+                  placeholder="http://localhost:3000"
+                  value={serverUrl}
+                  onChange={(e) => setServerUrl(e.target.value)}
                   required
                 />
                 <div className="api-note">
                   <Shield size={10} />
-                  <span>Stored client-side. Make sure your browser has CORS proxy bypass capability or uses standard HTTP headers.</span>
+                  <span>Streams SSE events from Yahoo Finance via the Hono backend. Make sure your Hono backend is running.</span>
                 </div>
               </div>
             )}
 
             {/* Refresh Rate */}
             <div className="form-group">
-              <label htmlFor="settings-refresh">Feed Refresh Interval</label>
+              <label htmlFor="settings-refresh">Feed Refresh Interval (Yahoo Query Rate)</label>
               <select
                 id="settings-refresh"
                 value={refreshInterval}
                 onChange={(e) => setRefreshInterval(parseInt(e.target.value, 10))}
               >
-                <option value={10}>10 Seconds (Fast Demo)</option>
+                <option value={10}>10 Seconds (Fast Updates)</option>
                 <option value={30}>30 Seconds</option>
-                <option value={60}>60 Seconds (Default)</option>
+                <option value={60}>60 Seconds (Recommended)</option>
                 <option value={300}>5 Minutes (Eco)</option>
               </select>
             </div>
@@ -146,7 +131,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
                 disabled={isFetching}
               >
                 <RefreshCw size={14} className={isFetching ? 'spinning-sparkle' : ''} />
-                Force Refresh
+                Reconnect / Restart Stream
               </button>
               
               <button type="submit" className="save-settings-btn">
@@ -161,7 +146,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({
             <div className="status-item">
               <span>Status:</span>
               <strong className={fetchError ? 'text-red' : 'text-green'}>
-                {isFetching ? 'Refreshing...' : fetchError ? 'API Error' : 'Connected & Active'}
+                {isFetching ? 'Connecting Stream...' : fetchError ? 'Connection Error' : 'Stream Connected & Active'}
               </strong>
             </div>
             

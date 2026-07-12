@@ -1,4 +1,4 @@
-import type { SpotPrices, HistoricalPricePoint, MetalType, ApiConfig } from '../types/metals';
+import type { SpotPrices, HistoricalPricePoint } from '../types/metals';
 
 // Base prices in USD per troy ounce
 export const BASE_PRICES = {
@@ -136,96 +136,7 @@ export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   };
 }
 
-// Fetch prices from real APIs if user provides an API key
-export async function fetchLivePrices(config: ApiConfig): Promise<SpotPrices> {
-  if (config.provider === 'simulated' || !config.apiKey) {
-    throw new Error('Using simulated data');
-  }
 
-  if (config.provider === 'goldapi') {
-    // GoldAPI.io requires headers for access token
-    // Example: https://www.goldapi.io/api/XAU/USD
-    // We need to make 4 requests (one for each metal)
-    const metalsMap: Record<MetalType, string> = {
-      gold: 'XAU',
-      silver: 'XAG',
-      platinum: 'XPT',
-      palladium: 'XPD'
-    };
-
-    const fetchMetal = async (symbol: string): Promise<number> => {
-      const response = await fetch(`https://www.goldapi.io/api/${symbol}/USD`, {
-        headers: {
-          'x-access-token': config.apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`GoldAPI failed for ${symbol}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.price;
-    };
-
-    try {
-      const [gold, silver, platinum, palladium] = await Promise.all([
-        fetchMetal(metalsMap.gold),
-        fetchMetal(metalsMap.silver),
-        fetchMetal(metalsMap.platinum),
-        fetchMetal(metalsMap.palladium)
-      ]);
-
-      return {
-        gold,
-        silver,
-        platinum,
-        palladium,
-        timestamp: Date.now()
-      };
-    } catch (err) {
-      console.error('GoldAPI error:', err);
-      throw err;
-    }
-  } else if (config.provider === 'metalpriceapi') {
-    // MetalpriceAPI provides all rates relative to base
-    // Example endpoint: https://api.metalpriceapi.com/v1/latest?api_key=API_KEY&base=USD&currencies=XAU,XAG,XPT,XPD
-    // Rates are returned as 1 USD = X ounces of metal. So price per ounce is 1 / rate.
-    try {
-      const response = await fetch(
-        `https://api.metalpriceapi.com/v1/latest?api_key=${config.apiKey}&base=USD&currencies=XAU,XAG,XPT,XPD`
-      );
-      if (!response.ok) {
-        throw new Error(`MetalpriceAPI failed: ${response.statusText}`);
-      }
-      const data = await response.json();
-      if (!data.success || !data.rates) {
-        throw new Error(data.error?.info || 'Failed to fetch rates from MetalpriceAPI');
-      }
-
-      // Rates are 1 USD = X metal.
-      // Gold (XAU), Silver (XAG), Platinum (XPT), Palladium (XPD)
-      const rates = data.rates;
-      const getPrice = (symbol: string) => {
-        const rate = rates[symbol];
-        if (!rate) throw new Error(`Rate for ${symbol} not found`);
-        return Number((1 / rate).toFixed(2));
-      };
-
-      return {
-        gold: getPrice('XAU'),
-        silver: getPrice('XAG'),
-        platinum: getPrice('XPT'),
-        palladium: getPrice('XPD'),
-        timestamp: Date.now()
-      };
-    } catch (err) {
-      console.error('MetalpriceAPI error:', err);
-      throw err;
-    }
-  }
-
-  throw new Error('Unsupported provider');
-}
 
 // Convert prices between ounces, grams, and kilograms
 // 1 troy ounce = 31.1034768 grams

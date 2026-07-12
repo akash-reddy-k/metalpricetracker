@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, ApiConfig } from './types/metals';
-import { BASE_PRICES, simulatePriceTick, fetchLivePrices } from './services/priceEngine';
+import { BASE_PRICES, simulatePriceTick } from './services/priceEngine';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
@@ -24,62 +24,100 @@ function App() {
   // API Feed settings
   const [apiConfig, setApiConfig] = useState<ApiConfig>({
     provider: 'simulated',
-    apiKey: '',
+    serverUrl: 'http://localhost:3000',
   });
   const [refreshInterval, setRefreshInterval] = useState<number>(60); // seconds
+  const [reconnectTrigger, setReconnectTrigger] = useState<number>(0);
 
   // Fetch status
   const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [isFetching, setIsFetching] = useState<boolean>(false);
 
-  // Store prices in ref to avoid re-triggering polling effects unnecessarily
-  const pricesRef = useRef<SpotPrices>(prices);
+  // Interval polling or SSE streaming effect
   useEffect(() => {
-    pricesRef.current = prices;
-  }, [prices]);
-
-  // Fetching/Simulation executor
-  const performUpdate = useCallback(async (currentConfig: ApiConfig) => {
-    setIsFetching(true);
-    setFetchError(null);
-    try {
-      if (currentConfig.provider === 'simulated' || !currentConfig.apiKey) {
-        // Run simulated tick
-        const nextPrices = simulatePriceTick(pricesRef.current);
-        setPrices(nextPrices);
-        setLastUpdated(new Date());
-      } else {
-        // Run external API fetch
-        const nextPrices = await fetchLivePrices(currentConfig);
-        setPrices(nextPrices);
-        setLastUpdated(new Date());
-      }
-    } catch (err: any) {
-      console.error(err);
-      setFetchError(err.message || 'An unexpected error occurred while fetching prices');
-      // If live fails, fall back to simulation step so the app remains responsive
-      const nextPrices = simulatePriceTick(pricesRef.current);
-      setPrices(nextPrices);
-    } finally {
+    if (apiConfig.provider === 'simulated') {
       setIsFetching(false);
+      setFetchError(null);
+
+      const runSimTick = () => {
+        setPrices((prev) => {
+          const next = simulatePriceTick(prev);
+          setLastUpdated(new Date());
+          return next;
+        });
+      };
+
+      // Initial simulation tick
+      runSimTick();
+
+      const intervalId = setInterval(runSimTick, refreshInterval * 1000);
+      return () => clearInterval(intervalId);
+    } else {
+      setIsFetching(true);
+      setFetchError(null);
+
+      const symbols = 'GC=F,SI=F,PL=F,PA=F';
+      const sseUrl = `${apiConfig.serverUrl}/live-quotes?s=${symbols}&i=${refreshInterval * 1000}`;
+      
+      let eventSource: EventSource | null = null;
+
+      try {
+        eventSource = new EventSource(sseUrl);
+
+        eventSource.onopen = () => {
+          setIsFetching(false);
+          setFetchError(null);
+        };
+
+        eventSource.onerror = (err) => {
+          console.error("SSE stream error:", err);
+          setFetchError(`Failed to stream from Hono server at ${apiConfig.serverUrl}. Please ensure the Hono backend is running (npx tsx server.ts).`);
+          setIsFetching(false);
+          
+          // Trigger a fallback simulated tick so the UI stays updated
+          setPrices((prev) => {
+            const next = simulatePriceTick(prev);
+            setLastUpdated(new Date());
+            return next;
+          });
+        };
+
+        eventSource.addEventListener('quote', (event: MessageEvent) => {
+          try {
+            const quote = JSON.parse(event.data);
+            const { symbol, price } = quote;
+            if (price && typeof price === 'number') {
+              setPrices((prev) => {
+                const next = { ...prev, timestamp: Date.now() };
+                if (symbol === 'GC=F') next.gold = price;
+                if (symbol === 'SI=F') next.silver = price;
+                if (symbol === 'PL=F') next.platinum = price;
+                if (symbol === 'PA=F') next.palladium = price;
+                return next;
+              });
+              setLastUpdated(new Date());
+            }
+          } catch (parseErr) {
+            console.error("Error parsing quote SSE data:", parseErr);
+          }
+        });
+
+      } catch (err: any) {
+        setFetchError(err.message || 'Failed to initialize Hono SSE connection');
+        setIsFetching(false);
+      }
+
+      return () => {
+        if (eventSource) {
+          eventSource.close();
+        }
+      };
     }
-  }, []);
-
-  // Interval polling effect
-  useEffect(() => {
-    // Initial fetch/sync
-    performUpdate(apiConfig);
-
-    const intervalId = setInterval(() => {
-      performUpdate(apiConfig);
-    }, refreshInterval * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [apiConfig, refreshInterval, performUpdate]);
+  }, [apiConfig, refreshInterval, reconnectTrigger]);
 
   const handleManualFetch = () => {
-    performUpdate(apiConfig);
+    setReconnectTrigger((prev) => prev + 1);
   };
 
   return (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
-import { BASE_PRICES, simulatePriceTick } from './services/priceEngine';
+import { BASE_PRICES } from './services/priceEngine';
 import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
@@ -133,14 +133,28 @@ function App() {
                   ...prev,
                   [currency]: price,
                 }));
+                // Dynamically cache into the default EXCHANGE_RATES reference
+                EXCHANGE_RATES[currency] = price;
               }
             } else {
               setPrices((prev) => {
                 const next = { ...prev, timestamp: Date.now() };
-                if (symbol === 'GC=F') next.gold = price;
-                if (symbol === 'SI=F') next.silver = price;
-                if (symbol === 'PL=F') next.platinum = price;
-                if (symbol === 'PA=F') next.palladium = price;
+                if (symbol === 'GC=F') {
+                  next.gold = price;
+                  BASE_PRICES.gold = price;
+                }
+                if (symbol === 'SI=F') {
+                  next.silver = price;
+                  BASE_PRICES.silver = price;
+                }
+                if (symbol === 'PL=F') {
+                  next.platinum = price;
+                  BASE_PRICES.platinum = price;
+                }
+                if (symbol === 'PA=F') {
+                  next.palladium = price;
+                  BASE_PRICES.palladium = price;
+                }
                 return next;
               });
             }
@@ -163,27 +177,20 @@ function App() {
     };
   }, [refreshInterval, reconnectTrigger]);
 
-  // Resilient offline fallback: run simulations if SSE fails
+  // Resilient offline fallback: hold exact cached rates if SSE fails (prevent ticking simulated random prices)
   useEffect(() => {
     if (!fetchError) return;
 
-    // Run first simulation tick immediately when falling offline
-    setPrices((prev) => {
-      const next = simulatePriceTick(prev);
-      setLastUpdated(new Date());
-      return next;
+    // Set prices to exactly the in-memory cached BASE_PRICES (which was updated on every successful quote fetch)
+    setPrices({
+      gold: BASE_PRICES.gold,
+      silver: BASE_PRICES.silver,
+      platinum: BASE_PRICES.platinum,
+      palladium: BASE_PRICES.palladium,
+      timestamp: Date.now(),
     });
-
-    const intervalId = setInterval(() => {
-      setPrices((prev) => {
-        const next = simulatePriceTick(prev);
-        setLastUpdated(new Date());
-        return next;
-      });
-    }, refreshInterval * 1000);
-
-    return () => clearInterval(intervalId);
-  }, [fetchError, refreshInterval]);
+    setLastUpdated(new Date());
+  }, [fetchError]);
 
   // Sync global weight unit with country's default weight unit when currency changes in header
   useEffect(() => {

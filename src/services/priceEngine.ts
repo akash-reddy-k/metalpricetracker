@@ -1,11 +1,11 @@
 import type { SpotPrices, HistoricalPricePoint, WeightUnit } from '../types/metals';
 
-// Base prices in USD per troy ounce
+// Base prices in USD per troy ounce (Seeded with July 2026 spot price cache defaults)
 export const BASE_PRICES = {
-  gold: 2354.2,
-  silver: 29.85,
-  platinum: 978.5,
-  palladium: 945.1,
+  gold: 4120.0,
+  silver: 59.87,
+  platinum: 1634.0,
+  palladium: 1280.0,
 };
 
 // Seeded random number generator for reproducible history

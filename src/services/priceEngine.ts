@@ -1,26 +1,29 @@
-import type { SpotPrices, HistoricalPricePoint, MetalType, ApiConfig } from '../types/metals';
+import type { SpotPrices, HistoricalPricePoint, WeightUnit } from '../types/metals';
 
-// Base prices in USD per troy ounce
+// Base prices in USD per troy ounce (Seeded with July 2026 spot price cache defaults)
 export const BASE_PRICES = {
-  gold: 2354.20,
-  silver: 29.85,
-  platinum: 978.50,
-  palladium: 945.10,
+  gold: 4120.0,
+  silver: 59.87,
+  platinum: 1634.0,
+  palladium: 1280.0,
 };
 
 // Seeded random number generator for reproducible history
 function createRandom(seed: number) {
   let h = seed ^ 0xdeadbeef;
-  return function() {
+  return function () {
     h = Math.imul(h ^ (h >>> 16), 2246822507);
     h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
 }
 
-export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | '5y', currentPrices: SpotPrices): HistoricalPricePoint[] {
+export function generateHistoricalData(
+  timeframe: '24h' | '7d' | '30d' | '1y' | '5y',
+  currentPrices: SpotPrices
+): HistoricalPricePoint[] {
   const now = currentPrices.timestamp;
-  
+
   let pointsCount = 30;
   let intervalMs = 24 * 60 * 60 * 1000; // 1 day default
 
@@ -58,7 +61,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
   // Generate backwards from now
   const tempPoints: HistoricalPricePoint[] = [];
-  
+
   // Start tracking prices backwards
   const prices = {
     gold: currentPrices.gold,
@@ -84,14 +87,21 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
   // Add the current point first
   tempPoints.push({
     timestamp: now,
-    prices: { ...prices }
+    prices: { ...prices },
   });
 
   for (let i = 1; i < pointsCount; i++) {
     const timestamp = now - i * intervalMs;
-    
+
     // Calculate random fluctuations (Brownian motion)
-    const goldVolatility = timeframe === '24h' ? 0.002 : timeframe === '7d' ? 0.006 : timeframe === '30d' ? 0.012 : 0.025;
+    const goldVolatility =
+      timeframe === '24h'
+        ? 0.002
+        : timeframe === '7d'
+          ? 0.006
+          : timeframe === '30d'
+            ? 0.012
+            : 0.025;
     const silverVolatility = goldVolatility * 1.5; // Silver is more volatile
     const platVol = goldVolatility * 1.2;
     const pallVol = goldVolatility * 1.4;
@@ -110,7 +120,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
     tempPoints.push({
       timestamp,
-      prices: { ...prices }
+      prices: { ...prices },
     });
   }
 
@@ -120,7 +130,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
 export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   const rng = Math.random;
-  
+
   // Markets fluctuate slightly every tick (approx -0.15% to +0.15%)
   const fluctuate = (price: number, volatility = 0.0012) => {
     const changePercent = (rng() - 0.49) * 2 * volatility; // slightly positive bias to mimic long-term growth
@@ -130,112 +140,25 @@ export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   return {
     gold: fluctuate(currentPrices.gold, 0.0008),
     silver: fluctuate(currentPrices.silver, 0.0015),
-    platinum: fluctuate(currentPrices.platinum, 0.0010),
+    platinum: fluctuate(currentPrices.platinum, 0.001),
     palladium: fluctuate(currentPrices.palladium, 0.0012),
     timestamp: Date.now(),
   };
 }
 
-// Fetch prices from real APIs if user provides an API key
-export async function fetchLivePrices(config: ApiConfig): Promise<SpotPrices> {
-  if (config.provider === 'simulated' || !config.apiKey) {
-    throw new Error('Using simulated data');
-  }
-
-  if (config.provider === 'goldapi') {
-    // GoldAPI.io requires headers for access token
-    // Example: https://www.goldapi.io/api/XAU/USD
-    // We need to make 4 requests (one for each metal)
-    const metalsMap: Record<MetalType, string> = {
-      gold: 'XAU',
-      silver: 'XAG',
-      platinum: 'XPT',
-      palladium: 'XPD'
-    };
-
-    const fetchMetal = async (symbol: string): Promise<number> => {
-      const response = await fetch(`https://www.goldapi.io/api/${symbol}/USD`, {
-        headers: {
-          'x-access-token': config.apiKey,
-          'Content-Type': 'application/json'
-        }
-      });
-      if (!response.ok) {
-        throw new Error(`GoldAPI failed for ${symbol}: ${response.statusText}`);
-      }
-      const data = await response.json();
-      return data.price;
-    };
-
-    try {
-      const [gold, silver, platinum, palladium] = await Promise.all([
-        fetchMetal(metalsMap.gold),
-        fetchMetal(metalsMap.silver),
-        fetchMetal(metalsMap.platinum),
-        fetchMetal(metalsMap.palladium)
-      ]);
-
-      return {
-        gold,
-        silver,
-        platinum,
-        palladium,
-        timestamp: Date.now()
-      };
-    } catch (err) {
-      console.error('GoldAPI error:', err);
-      throw err;
-    }
-  } else if (config.provider === 'metalpriceapi') {
-    // MetalpriceAPI provides all rates relative to base
-    // Example endpoint: https://api.metalpriceapi.com/v1/latest?api_key=API_KEY&base=USD&currencies=XAU,XAG,XPT,XPD
-    // Rates are returned as 1 USD = X ounces of metal. So price per ounce is 1 / rate.
-    try {
-      const response = await fetch(
-        `https://api.metalpriceapi.com/v1/latest?api_key=${config.apiKey}&base=USD&currencies=XAU,XAG,XPT,XPD`
-      );
-      if (!response.ok) {
-        throw new Error(`MetalpriceAPI failed: ${response.statusText}`);
-      }
-      const data = await response.json();
-      if (!data.success || !data.rates) {
-        throw new Error(data.error?.info || 'Failed to fetch rates from MetalpriceAPI');
-      }
-
-      // Rates are 1 USD = X metal.
-      // Gold (XAU), Silver (XAG), Platinum (XPT), Palladium (XPD)
-      const rates = data.rates;
-      const getPrice = (symbol: string) => {
-        const rate = rates[symbol];
-        if (!rate) throw new Error(`Rate for ${symbol} not found`);
-        return Number((1 / rate).toFixed(2));
-      };
-
-      return {
-        gold: getPrice('XAU'),
-        silver: getPrice('XAG'),
-        platinum: getPrice('XPT'),
-        palladium: getPrice('XPD'),
-        timestamp: Date.now()
-      };
-    } catch (err) {
-      console.error('MetalpriceAPI error:', err);
-      throw err;
-    }
-  }
-
-  throw new Error('Unsupported provider');
-}
-
-// Convert prices between ounces, grams, and kilograms
+// Convert prices between ounces, grams, and other popular weight units
 // 1 troy ounce = 31.1034768 grams
-// 1 kilogram = 1000 grams = 32.1507466 troy ounces
-export const WEIGHT_CONVERSIONS = {
+export const WEIGHT_CONVERSIONS: Record<WeightUnit, number> = {
   oz: 1,
   g: 1 / 31.1034768,
   kg: 32.1507466,
+  tola: 10 / 31.1034768, // Metric Tola (10g)
+  tael: 37.5 / 31.1034768, // Chinese Tael (37.5g)
+  baht: 15.244 / 31.1034768, // Thai Baht (15.244g)
+  mesghal: 4.6083 / 31.1034768, // Iranian Mesghal (4.6083g)
+  dwt: 0.05, // Pennyweight (exactly 1/20 of troy oz)
 };
 
-export function getPricePerUnit(pricePerOz: number, unit: 'oz' | 'g' | 'kg'): number {
+export function getPricePerUnit(pricePerOz: number, unit: WeightUnit): number {
   return pricePerOz * WEIGHT_CONVERSIONS[unit];
 }

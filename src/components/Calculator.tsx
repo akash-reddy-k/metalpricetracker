@@ -1,15 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import type { MetalType, CurrencyType, WeightUnit, CalculationResult } from '../types/metals';
-import { COUNTRIES, PURITY_OPTIONS, EXCHANGE_RATES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
+import {
+  COUNTRIES,
+  PURITY_OPTIONS,
+  CURRENCY_SYMBOLS,
+  isGoldVatExempt,
+  getMetalImportDuty,
+  getMetalVatGst,
+} from '../data/countries';
 import { WEIGHT_CONVERSIONS } from '../services/priceEngine';
-import { Calculator as CalcIcon, FileText, Info, Award, Globe, Scale } from 'lucide-react';
+import { Calculator as CalcIcon, FileText, Info, Award, Scale } from 'lucide-react';
 
 interface CalculatorProps {
   activeMetal: MetalType;
   setActiveMetal: (metal: MetalType) => void;
   spotPrices: { gold: number; silver: number; platinum: number; palladium: number };
   selectedCurrency: CurrencyType;
-  setSelectedCurrency: (currency: CurrencyType) => void;
+  weightUnit: WeightUnit;
+  exchangeRates: Record<CurrencyType, number>;
 }
 
 export const Calculator: React.FC<CalculatorProps> = ({
@@ -17,71 +25,101 @@ export const Calculator: React.FC<CalculatorProps> = ({
   setActiveMetal,
   spotPrices,
   selectedCurrency,
-  setSelectedCurrency,
+  weightUnit,
+  exchangeRates,
 }) => {
-  const [selectedCountryCode, setSelectedCountryCode] = useState<string>('US');
   const [weight, setWeight] = useState<number>(1);
-  const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
-  
+  const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>(weightUnit);
+
   // Purity option index
   const purities = PURITY_OPTIONS[activeMetal];
   const [selectedPurityIndex, setSelectedPurityIndex] = useState<number>(0);
-  
-  // Custom dealer premium percentage override (null means use country default)
-  const [customPremium, setCustomPremium] = useState<string>('');
 
-  const currentCountry = COUNTRIES.find((c) => c.code === selectedCountryCode) || COUNTRIES[0];
+  // Product format & consolidated dealer charges percentage override (empty means use default)
+  const [productType, setProductType] = useState<'bullion' | 'jewellery'>('bullion');
+  const [dealerCharges, setDealerCharges] = useState<string>('');
 
-  // Sync country currency with selected currency
+  // Custom fixed mint/processing fee (only for bullion)
+  const [customMintFee, setCustomMintFee] = useState<string>('');
+
+  const currentCountry = COUNTRIES.find((c) => c.currency === selectedCurrency) || COUNTRIES[0];
+
+  // Sync local weight unit when global header weight unit changes
   useEffect(() => {
-    setSelectedCurrency(currentCountry.currency);
-  }, [selectedCountryCode, currentCountry]);
+    setLocalWeightUnit(weightUnit);
+  }, [weightUnit]);
 
   // Sync purity index when metal changes
   useEffect(() => {
     setSelectedPurityIndex(0);
   }, [activeMetal]);
 
+  // Reset local weight and unit when country changes
+  useEffect(() => {
+    if (currentCountry.defaultWeight !== undefined) {
+      setWeight(currentCountry.defaultWeight);
+    }
+    if (currentCountry.defaultUnit !== undefined) {
+      setLocalWeightUnit(currentCountry.defaultUnit);
+    }
+  }, [currentCountry]);
+
   // Calculation Logic
   const calculateCosts = (): CalculationResult => {
     const spotPriceUSD = spotPrices[activeMetal];
-    const exchangeRate = EXCHANGE_RATES[selectedCurrency];
+    const exchangeRate = exchangeRates[selectedCurrency];
     const spotPriceTarget = spotPriceUSD * exchangeRate;
 
-    // Convert weight to ounces
-    let weightInOz = weight;
-    if (weightUnit === 'g') {
-      weightInOz = weight * WEIGHT_CONVERSIONS.g;
-    } else if (weightUnit === 'kg') {
-      weightInOz = weight * WEIGHT_CONVERSIONS.kg;
-    }
+    // Convert weight to ounces based on localWeightUnit
+    const weightInOz = weight * WEIGHT_CONVERSIONS[localWeightUnit];
 
     const baseSpotValue = spotPriceTarget * weightInOz;
-    
+
     // Purity adjustment
     const activePurity = purities[selectedPurityIndex]?.value ?? 1;
     const rawMetalValue = baseSpotValue * activePurity;
 
     // Government levies
-    const dutyPercent = currentCountry.importDuty;
+    const dutyPercent = getMetalImportDuty(currentCountry, activeMetal);
     const importDutyValue = rawMetalValue * (dutyPercent / 100);
 
-    // VAT/GST: Applied on (Raw Metal Value + Import Duty)
-    const isExempt = activeMetal === 'gold' && isGoldVatExempt(currentCountry.code);
-    const vatPercent = isExempt ? 0 : currentCountry.vatGst;
-    const vatGstValue = (rawMetalValue + importDutyValue) * (vatPercent / 100);
+    // Dealer charges vs Making charges (Consolidated and mutually exclusive)
+    const chargesPercent =
+      dealerCharges !== ''
+        ? parseFloat(dealerCharges) || 0
+        : productType === 'bullion'
+          ? currentCountry.dealerPremium
+          : 0;
 
-    // Dealer premium
-    const premiumPercent = customPremium !== '' ? parseFloat(customPremium) || 0 : currentCountry.dealerPremium;
-    const dealerPremiumValue = rawMetalValue * (premiumPercent / 100) + (currentCountry.fixedMintFeePerOz * weightInOz * exchangeRate);
+    let dealerPremiumValue = 0;
+    let makingChargesValue = 0;
+
+    if (productType === 'bullion') {
+      // Bullion Premium adds country percentage premium + fixed mint fee per localWeightUnit (both configurable by user)
+      const defaultMintFee =
+        currentCountry.fixedMintFeePerOz * exchangeRate * WEIGHT_CONVERSIONS[localWeightUnit];
+      const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFee;
+      dealerPremiumValue = rawMetalValue * (chargesPercent / 100) + mintFeeTarget * weight;
+    } else {
+      // Jewellery Making Charges adds custom percentage fee only
+      makingChargesValue = rawMetalValue * (chargesPercent / 100);
+    }
+
+    // VAT/GST: Applied on (Raw Metal Value + Import Duty + Making Charges)
+    // Gold is only VAT exempt if it is investment bullion. Jewellery gold carries standard VAT/GST!
+    const isExempt =
+      activeMetal === 'gold' && isGoldVatExempt(currentCountry.code) && productType === 'bullion';
+    const vatPercent = isExempt ? 0 : getMetalVatGst(currentCountry, activeMetal);
+    const vatGstValue = (rawMetalValue + importDutyValue + makingChargesValue) * (vatPercent / 100);
 
     // Final consumer price
-    const finalPrice = rawMetalValue + importDutyValue + vatGstValue + dealerPremiumValue;
+    const finalPrice =
+      rawMetalValue + importDutyValue + makingChargesValue + vatGstValue + dealerPremiumValue;
 
     return {
       metal: activeMetal,
       weight,
-      weightUnit,
+      weightUnit: localWeightUnit,
       purity: activePurity,
       purityLabel: purities[selectedPurityIndex]?.label ?? 'Fine',
       currency: selectedCurrency,
@@ -91,6 +129,7 @@ export const Calculator: React.FC<CalculatorProps> = ({
       baseSpotValue,
       rawMetalValue,
       importDutyValue,
+      makingChargesValue,
       vatGstValue,
       dealerPremiumValue,
       finalPrice,
@@ -98,6 +137,17 @@ export const Calculator: React.FC<CalculatorProps> = ({
     };
   };
 
+  const chargesPercent =
+    dealerCharges !== ''
+      ? parseFloat(dealerCharges) || 0
+      : productType === 'bullion'
+        ? currentCountry.dealerPremium
+        : 0;
+  const defaultMintFee =
+    currentCountry.fixedMintFeePerOz *
+    exchangeRates[selectedCurrency] *
+    WEIGHT_CONVERSIONS[localWeightUnit];
+  const mintFeeTarget = customMintFee !== '' ? parseFloat(customMintFee) || 0 : defaultMintFee;
   const res = calculateCosts();
   const symbol = CURRENCY_SYMBOLS[selectedCurrency];
 
@@ -114,33 +164,56 @@ export const Calculator: React.FC<CalculatorProps> = ({
   const taxSum = res.importDutyValue + res.vatGstValue;
   const rawPct = res.finalPrice > 0 ? (res.rawMetalValue / res.finalPrice) * 100 : 0;
   const taxPct = res.finalPrice > 0 ? (taxSum / res.finalPrice) * 100 : 0;
-  const premPct = res.finalPrice > 0 ? (res.dealerPremiumValue / res.finalPrice) * 100 : 0;
+  const premPct =
+    res.finalPrice > 0
+      ? ((res.dealerPremiumValue + res.makingChargesValue) / res.finalPrice) * 100
+      : 0;
 
   return (
-    <div className="calculator-wrapper">
+    <div id="tax-calculator-section" className="calculator-wrapper">
       <div className="card-panel">
         <div className="panel-title">
           <CalcIcon size={20} className="glow-purple-text" />
           <h2>Tax & Localization Calculator</h2>
         </div>
-        <p className="panel-subtitle">Compute final retail prices including global tariffs, state VAT/GST, and premiums.</p>
+        <p className="panel-subtitle">
+          Compute final retail prices including global tariffs, state VAT/GST, and premiums.
+        </p>
 
         <div className="calc-inputs-grid">
-          {/* Target Country */}
+          {/* Weight Unit Selector - replaces Country */}
           <div className="input-group">
-            <label htmlFor="calc-country">
-              <Globe size={14} /> Destination Country
-            </label>
+            <label htmlFor="calc-unit">Weight Unit</label>
             <select
-              id="calc-country"
-              value={selectedCountryCode}
-              onChange={(e) => setSelectedCountryCode(e.target.value)}
+              id="calc-unit"
+              value={localWeightUnit}
+              onChange={(e) => setLocalWeightUnit(e.target.value as WeightUnit)}
             >
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.flag} {c.name} ({c.currency})
-                </option>
-              ))}
+              <option value="oz">oz (troy)</option>
+              <option value="g">g (grams)</option>
+              <option value="kg">kg (kilos)</option>
+              <option value="tola">tola (10g)</option>
+              <option value="tael">tael (37.5g)</option>
+              <option value="baht">baht (15.244g)</option>
+              <option value="mesghal">mesghal (4.6083g)</option>
+              <option value="dwt">dwt (pennyweight)</option>
+            </select>
+          </div>
+
+          {/* Product Format */}
+          <div className="input-group">
+            <label htmlFor="calc-product-type">Product Format</label>
+            <select
+              id="calc-product-type"
+              value={productType}
+              onChange={(e) => {
+                setProductType(e.target.value as 'bullion' | 'jewellery');
+                setDealerCharges(''); // Clear overrides when format changes
+                setCustomMintFee('');
+              }}
+            >
+              <option value="bullion">Bullion (Coins/Bars)</option>
+              <option value="jewellery">Jewellery (Fine Goods)</option>
             </select>
           </div>
 
@@ -159,30 +232,19 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </select>
           </div>
 
-          {/* Weight */}
+          {/* Weight Amount */}
           <div className="input-group">
             <label htmlFor="calc-weight">
               <Scale size={14} /> Weight Amount
             </label>
-            <div className="weight-input-wrapper">
-              <input
-                id="calc-weight"
-                type="number"
-                min="0.001"
-                step="any"
-                value={weight}
-                onChange={(e) => setWeight(Math.max(0.001, parseFloat(e.target.value) || 0))}
-              />
-              <select
-                aria-label="Weight Unit"
-                value={weightUnit}
-                onChange={(e) => setWeightUnit(e.target.value as WeightUnit)}
-              >
-                <option value="oz">oz (troy)</option>
-                <option value="g">g (grams)</option>
-                <option value="kg">kg (kilos)</option>
-              </select>
-            </div>
+            <input
+              id="calc-weight"
+              type="number"
+              min="0.001"
+              step="any"
+              value={weight}
+              onChange={(e) => setWeight(Math.max(0.001, parseFloat(e.target.value) || 0))}
+            />
           </div>
 
           {/* Purity */}
@@ -201,22 +263,44 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </select>
           </div>
 
-          {/* Dealer Premium Override */}
+          {/* Consolidated Dealer Charges input (dynamic label and placeholder) */}
           <div className="input-group">
-            <label htmlFor="calc-premium">
-              Premium Override (%)
+            <label htmlFor="calc-charges">
+              {productType === 'bullion' ? 'Premium Override (%)' : 'Dealer Making Charges (%)'}
             </label>
             <input
-              id="calc-premium"
+              id="calc-charges"
               type="number"
-              placeholder={`${currentCountry.dealerPremium}% (Default)`}
-              value={customPremium}
+              placeholder={
+                productType === 'bullion'
+                  ? `${currentCountry.dealerPremium}% (Default)`
+                  : '0% (Default)'
+              }
+              value={dealerCharges}
               min="0"
               max="100"
               step="0.1"
-              onChange={(e) => setCustomPremium(e.target.value)}
+              onChange={(e) => setDealerCharges(e.target.value)}
             />
           </div>
+
+          {/* Mint Fee / Handling override (Bullion only) */}
+          {productType === 'bullion' && (
+            <div className="input-group">
+              <label htmlFor="calc-mint-fee">
+                Mint Fee / Markup ({symbol}/{localWeightUnit})
+              </label>
+              <input
+                id="calc-mint-fee"
+                type="number"
+                placeholder={`${defaultMintFee.toFixed(2)} (Default)`}
+                value={customMintFee}
+                min="0"
+                step="0.01"
+                onChange={(e) => setCustomMintFee(e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Local Rate Details */}
@@ -226,9 +310,33 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <span>Country Tax Profile:</span>
           </div>
           <div className="rates-summary-flex">
-            <span>Import Duty: <strong>{currentCountry.importDuty}%</strong></span>
-            <span>VAT/GST: <strong>{activeMetal === 'gold' && isGoldVatExempt(currentCountry.code) ? '0% (Exempt)' : `${currentCountry.vatGst}%`}</strong></span>
-            <span>Mint Premium: <strong>{customPremium !== '' ? `${customPremium}%` : `${currentCountry.dealerPremium}%`} + {symbol}{(currentCountry.fixedMintFeePerOz * EXCHANGE_RATES[selectedCurrency]).toFixed(2)}/oz</strong></span>
+            <span>
+              Import Duty: <strong>{getMetalImportDuty(currentCountry, activeMetal)}%</strong>
+            </span>
+            <span>
+              VAT/GST:{' '}
+              <strong>
+                {activeMetal === 'gold' &&
+                isGoldVatExempt(currentCountry.code) &&
+                productType === 'bullion'
+                  ? '0% (Exempt)'
+                  : `${getMetalVatGst(currentCountry, activeMetal)}%`}
+              </strong>
+            </span>
+            {productType === 'bullion' ? (
+              <span>
+                Mint Premium:{' '}
+                <strong>
+                  {dealerCharges !== '' ? `${dealerCharges}%` : `${currentCountry.dealerPremium}%`}{' '}
+                  + {symbol}
+                  {mintFeeTarget.toFixed(2)}/{localWeightUnit}
+                </strong>
+              </span>
+            ) : (
+              <span>
+                Making Charges: <strong>{dealerCharges !== '' ? `${dealerCharges}%` : '0%'}</strong>
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -247,47 +355,92 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <span>Subtotal ({selectedCurrency})</span>
           </div>
 
-          <div className="receipt-row">
+          <div
+            className="receipt-row"
+            title="Base market value of the pure metal weight calculated using live international spot rates and exchange rates (Weight × Purity × Spot Price)."
+          >
             <div>
               <span>Raw Metal Spot Value</span>
-              <small>{res.weight} {res.weightUnit} @ {res.purityLabel}</small>
+              <small>
+                {res.weight} {res.weightUnit} @ {res.purityLabel}
+              </small>
             </div>
             <span>{formatCost(res.rawMetalValue)}</span>
           </div>
 
-          <div className="receipt-row">
+          <div
+            className="receipt-row"
+            title={`Government custom duties applied to imports of raw precious metals (${getMetalImportDuty(currentCountry, activeMetal)}% in ${currentCountry.name}).`}
+          >
             <div>
               <span>Import Tariffs & Duties</span>
-              <small>{currentCountry.importDuty}% of Metal Value</small>
+              <small>{getMetalImportDuty(currentCountry, activeMetal)}% of Metal Value</small>
             </div>
             <span>{formatCost(res.importDutyValue)}</span>
           </div>
 
-          <div className="receipt-row">
+          {productType === 'jewellery' && (
+            <div
+              className="receipt-row"
+              title="Dealer fabrication markup percentage applied directly to the metal content."
+            >
+              <div>
+                <span>Jewellery Making Charges</span>
+                <small>{dealerCharges !== '' ? dealerCharges : '0'}% dealer fabrication fee</small>
+              </div>
+              <span>{formatCost(res.makingChargesValue)}</span>
+            </div>
+          )}
+
+          <div
+            className="receipt-row"
+            title={`Consumption tax (VAT/GST) applied in ${currentCountry.name}. For jewellery this is standard rate; bullion gold may be exempt.`}
+          >
             <div>
               <span>Value Added Tax (VAT / GST)</span>
               <small>
-                {activeMetal === 'gold' && isGoldVatExempt(currentCountry.code)
+                {activeMetal === 'gold' &&
+                isGoldVatExempt(currentCountry.code) &&
+                productType === 'bullion'
                   ? 'Exempt (Investment Gold)'
-                  : `${currentCountry.vatGst}% on (Metal + Duty)`}
+                  : `${getMetalVatGst(currentCountry, activeMetal)}% on (Metal + Duty${res.makingChargesValue > 0 ? ' + Making' : ''})`}
               </small>
             </div>
-            <span className={activeMetal === 'gold' && isGoldVatExempt(currentCountry.code) ? 'exempt-text' : ''}>
+            <span
+              className={
+                activeMetal === 'gold' &&
+                isGoldVatExempt(currentCountry.code) &&
+                productType === 'bullion'
+                  ? 'exempt-text'
+                  : ''
+              }
+            >
               {formatCost(res.vatGstValue)}
             </span>
           </div>
 
-          <div className="receipt-row">
-            <div>
-              <span>Dealer & Mint Premium</span>
-              <small>Processing, handling, and broker markup</small>
+          {productType === 'bullion' && (
+            <div
+              className="receipt-row"
+              title={`Retail mint markup adding ${chargesPercent}% markup + ${symbol}${mintFeeTarget.toFixed(2)}/${localWeightUnit} fixed handling fee.`}
+            >
+              <div>
+                <span>Dealer & Mint Premium</span>
+                <small>
+                  {chargesPercent}% markup + {symbol}
+                  {mintFeeTarget.toFixed(2)}/{localWeightUnit} fee
+                </small>
+              </div>
+              <span>{formatCost(res.dealerPremiumValue)}</span>
             </div>
-            <span>{formatCost(res.dealerPremiumValue)}</span>
-          </div>
+          )}
 
           <div className="receipt-divider"></div>
 
-          <div className="receipt-row total">
+          <div
+            className="receipt-row total"
+            title="The final price the consumer pays, summing raw metal value, government tariffs, dealer premium, and consumption taxes."
+          >
             <span>Total Consumer Cost</span>
             <span>{formatCost(res.finalPrice)}</span>
           </div>
@@ -297,12 +450,24 @@ export const Calculator: React.FC<CalculatorProps> = ({
             <div className="bar-labels">
               <span className="lbl-metal">Metal Value ({rawPct.toFixed(1)}%)</span>
               <span className="lbl-tax">Govt Taxes ({taxPct.toFixed(1)}%)</span>
-              <span className="lbl-premium">Premium ({premPct.toFixed(1)}%)</span>
+              <span className="lbl-premium">Premium & Charges ({premPct.toFixed(1)}%)</span>
             </div>
             <div className="stacked-bar">
-              <div className="bar-chunk metal" style={{ width: `${rawPct}%` }} title="Raw Metal Value"></div>
-              <div className="bar-chunk tax" style={{ width: `${taxPct}%` }} title="Govt Tariffs & Taxes"></div>
-              <div className="bar-chunk premium" style={{ width: `${premPct}%` }} title="Dealer/Broker Premiums"></div>
+              <div
+                className="bar-chunk metal"
+                style={{ width: `${rawPct}%` }}
+                title="Raw Metal Value"
+              ></div>
+              <div
+                className="bar-chunk tax"
+                style={{ width: `${taxPct}%` }}
+                title="Govt Tariffs & Taxes"
+              ></div>
+              <div
+                className="bar-chunk premium"
+                style={{ width: `${premPct}%` }}
+                title="Dealer Premiums & Making Charges"
+              ></div>
             </div>
           </div>
 
@@ -310,8 +475,9 @@ export const Calculator: React.FC<CalculatorProps> = ({
           <div className="tax-note">
             <Info size={12} className="note-icon" />
             <p>
-              Prices are calculated using the live exchange rate of 1 USD = {res.exchangeRate.toFixed(4)} {selectedCurrency}. 
-              Local dealer premiums and minting charges vary based on physical product format (coins vs. bars).
+              Prices are calculated using the live exchange rate of 1 USD ={' '}
+              {res.exchangeRate.toFixed(4)} {selectedCurrency}. Local dealer premiums and minting
+              charges vary based on physical product format (coins vs. bars).
             </p>
           </div>
         </div>

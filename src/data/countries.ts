@@ -122,7 +122,7 @@ export const EXCHANGE_RATES: Record<CurrencyType, number> = {
   USD: 1.0,
   EUR: 0.92,
   GBP: 0.78,
-  INR: 83.5,
+  INR: 95.0,
   JPY: 155.0,
   CAD: 1.36,
   AUD: 1.50,

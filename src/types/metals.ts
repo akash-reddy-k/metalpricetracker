@@ -57,7 +57,4 @@ export interface CalculationResult {
   exchangeRate: number; // relative to USD (1 USD = X target currency)
 }
 
-export interface ApiConfig {
-  provider: 'simulated' | 'hono';
-  serverUrl: string; // e.g. "http://localhost:3000"
-}
+

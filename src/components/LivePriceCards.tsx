@@ -12,19 +12,23 @@ interface LivePriceCardsProps {
   exchangeRates: Record<CurrencyType, number>;
 }
 
-const METAL_DETAILS: Record<MetalType, { 
-  name: string; 
-  description: string;
-  glowClass: string; 
-  gradientClass: string; 
-  color: string;
-  textGlow: string;
-}> = {
+const METAL_DETAILS: Record<
+  MetalType,
+  {
+    name: string;
+    description: string;
+    glowClass: string;
+    gradientClass: string;
+    color: string;
+    textGlow: string;
+  }
+> = {
   gold: {
     name: 'Gold',
     description: 'XAU • Safe Haven Asset',
     glowClass: 'shadow-gold',
-    gradientClass: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.03) 100%)',
+    gradientClass:
+      'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.03) 100%)',
     color: '#EAB308',
     textGlow: '0 0 10px rgba(234, 179, 8, 0.4)',
   },
@@ -32,7 +36,8 @@ const METAL_DETAILS: Record<MetalType, {
     name: 'Silver',
     description: 'XAG • Industrial Catalyst',
     glowClass: 'shadow-silver',
-    gradientClass: 'linear-gradient(135deg, rgba(156, 163, 175, 0.1) 0%, rgba(229, 231, 235, 0.03) 100%)',
+    gradientClass:
+      'linear-gradient(135deg, rgba(156, 163, 175, 0.1) 0%, rgba(229, 231, 235, 0.03) 100%)',
     color: '#9CA3AF',
     textGlow: '0 0 10px rgba(156, 163, 175, 0.4)',
   },
@@ -40,7 +45,8 @@ const METAL_DETAILS: Record<MetalType, {
     name: 'Platinum',
     description: 'XPT • Automotive & Jewelry',
     glowClass: 'shadow-platinum',
-    gradientClass: 'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(224, 242, 254, 0.03) 100%)',
+    gradientClass:
+      'linear-gradient(135deg, rgba(56, 189, 248, 0.1) 0%, rgba(224, 242, 254, 0.03) 100%)',
     color: '#38BDF8',
     textGlow: '0 0 10px rgba(56, 189, 248, 0.4)',
   },
@@ -48,7 +54,8 @@ const METAL_DETAILS: Record<MetalType, {
     name: 'Palladium',
     description: 'XPD • Electronics & Autocatalysts',
     glowClass: 'shadow-palladium',
-    gradientClass: 'linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(221, 214, 254, 0.03) 100%)',
+    gradientClass:
+      'linear-gradient(135deg, rgba(167, 139, 250, 0.1) 0%, rgba(221, 214, 254, 0.03) 100%)',
     color: '#A78BFA',
     textGlow: '0 0 10px rgba(167, 139, 250, 0.4)',
   },
@@ -78,7 +85,12 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
       return;
     }
 
-    const newPulseStates = { ...pulseStates };
+    const diffs: Record<MetalType, 'up' | 'down' | null> = {
+      gold: null,
+      silver: null,
+      platinum: null,
+      palladium: null,
+    };
     let changed = false;
 
     (Object.keys(prices) as Array<keyof SpotPrices>).forEach((key) => {
@@ -88,16 +100,25 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
       const prevVal = previousPrices.current?.[metal] ?? currentVal;
 
       if (currentVal > prevVal) {
-        newPulseStates[metal] = 'up';
+        diffs[metal] = 'up';
         changed = true;
       } else if (currentVal < prevVal) {
-        newPulseStates[metal] = 'down';
+        diffs[metal] = 'down';
         changed = true;
       }
     });
 
     if (changed) {
-      setPulseStates(newPulseStates);
+      setPulseStates((prev) => {
+        const next = { ...prev };
+        (Object.keys(diffs) as MetalType[]).forEach((m) => {
+          if (diffs[m] !== null) {
+            next[m] = diffs[m];
+          }
+        });
+        return next;
+      });
+
       const timer = setTimeout(() => {
         setPulseStates({
           gold: null,
@@ -106,9 +127,11 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
           palladium: null,
         });
       }, 1500); // Pulse lasts 1.5s
-      
+
       previousPrices.current = prices;
       return () => clearTimeout(timer);
+    } else {
+      previousPrices.current = prices;
     }
   }, [prices]);
 
@@ -129,7 +152,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
         const details = METAL_DETAILS[metal];
         const currentPriceUSD = prices[metal];
         const basePriceUSD = BASE_PRICES[metal];
-        
+
         // Calculate total % change from the day's baseline
         const changePercent = ((currentPriceUSD - basePriceUSD) / basePriceUSD) * 100;
         const isPositive = changePercent >= 0;
@@ -153,15 +176,19 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                 <h3>{details.name}</h3>
                 <span className="metal-symbol">{details.description}</span>
               </div>
-              <div 
-                className="metal-badge" 
-                style={{ 
-                  backgroundColor: `${details.color}15`, 
+              <div
+                className="metal-badge"
+                style={{
+                  backgroundColor: `${details.color}15`,
                   color: details.color,
-                  border: `1px solid ${details.color}30`
+                  border: `1px solid ${details.color}30`,
                 }}
               >
-                {isSelected ? <Sparkles size={12} className="spinning-sparkle" /> : <Activity size={12} />}
+                {isSelected ? (
+                  <Sparkles size={12} className="spinning-sparkle" />
+                ) : (
+                  <Activity size={12} />
+                )}
                 <span style={{ marginLeft: '4px', fontSize: '11px', fontWeight: 'bold' }}>
                   {isSelected ? 'Active' : 'Select'}
                 </span>
@@ -184,16 +211,28 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
 
             <div className="price-breakdown-mini">
               {((unit: WeightUnit) => {
-                const secondary = unit === 'oz' 
-                  ? [{ label: 'Per Gram', u: 'g' as WeightUnit }, { label: 'Per Kilo', u: 'kg' as WeightUnit }]
-                  : unit === 'g'
-                  ? [{ label: 'Per Ounce', u: 'oz' as WeightUnit }, { label: 'Per Kilo', u: 'kg' as WeightUnit }]
-                  : [{ label: 'Per Ounce', u: 'oz' as WeightUnit }, { label: 'Per Gram', u: 'g' as WeightUnit }];
-                
+                const secondary =
+                  unit === 'oz'
+                    ? [
+                        { label: 'Per Gram', u: 'g' as WeightUnit },
+                        { label: 'Per Kilo', u: 'kg' as WeightUnit },
+                      ]
+                    : unit === 'g'
+                      ? [
+                          { label: 'Per Ounce', u: 'oz' as WeightUnit },
+                          { label: 'Per Kilo', u: 'kg' as WeightUnit },
+                        ]
+                      : [
+                          { label: 'Per Ounce', u: 'oz' as WeightUnit },
+                          { label: 'Per Gram', u: 'g' as WeightUnit },
+                        ];
+
                 return secondary.map((sec) => (
                   <div key={sec.u} className="mini-row">
                     <span className="mini-lbl">{sec.label}</span>
-                    <span className="mini-val">{formatPrice(currentPriceUSD, getPricePerUnit(1, sec.u))}</span>
+                    <span className="mini-val">
+                      {formatPrice(currentPriceUSD, getPricePerUnit(1, sec.u))}
+                    </span>
                   </div>
                 ));
               })(weightUnit)}

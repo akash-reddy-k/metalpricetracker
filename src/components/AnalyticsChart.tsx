@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import type { MetalType, CurrencyType, CountryTaxConfig, WeightUnit } from '../types/metals';
 import { COUNTRIES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
 import { generateHistoricalData, WEIGHT_CONVERSIONS } from '../services/priceEngine';
@@ -7,7 +7,13 @@ import { TrendingUp, Percent, ArrowLeftRight, Layers } from 'lucide-react';
 interface AnalyticsChartProps {
   activeMetal: MetalType;
   selectedCurrency: CurrencyType;
-  spotPrices: { gold: number; silver: number; platinum: number; palladium: number; timestamp: number };
+  spotPrices: {
+    gold: number;
+    silver: number;
+    platinum: number;
+    palladium: number;
+    timestamp: number;
+  };
   weightUnit: WeightUnit;
   exchangeRates: Record<CurrencyType, number>;
 }
@@ -28,68 +34,71 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   exchangeRates,
 }) => {
   const [timeframe, setTimeframe] = useState<'24h' | '7d' | '30d' | '1y' | '5y'>('30d');
-  
-  // Cross country comparison states
+
+  // Country comparison selection (Default A: India/IN, Default B: US)
+  const [countryACode, setCountryACode] = useState<string>('IN');
+  const [countryBCode, setCountryBCode] = useState<string>('US');
   const [compareEnabled, setCompareEnabled] = useState<boolean>(true);
-  const [countryACode, setCountryACode] = useState<string>('US');
-  const [countryBCode, setCountryBCode] = useState<string>('IN'); // default compare US vs India
 
   // Tooltip tracking
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  const countryA = COUNTRIES.find(c => c.code === countryACode) || COUNTRIES[0];
-  const countryB = COUNTRIES.find(c => c.code === countryBCode) || COUNTRIES[1];
+  const countryA = COUNTRIES.find((c) => c.code === countryACode) || COUNTRIES[0];
+  const countryB = COUNTRIES.find((c) => c.code === countryBCode) || COUNTRIES[1];
 
   // 1. Generate core historical spot prices in USD
   const historyData = useMemo(() => {
     return generateHistoricalData(timeframe, spotPrices);
   }, [timeframe, spotPrices]);
 
-  // Helper: Calculate final price in activeCurrency for a given country at a spotPriceUSD
-  const getFinalPriceInActiveCurrency = (
-    spotPriceUSD: number,
-    country: CountryTaxConfig
-  ): number => {
-    // 1. Convert spot USD to country currency
-    const rateToCountry = exchangeRates[country.currency];
-    const spotPriceCountry = spotPriceUSD * rateToCountry;
+  // Dynamic formula to calculate total retail markup / duty / VAT localized cost
+  const getFinalPriceInActiveCurrency = useCallback(
+    (spotPriceUSD: number, country: CountryTaxConfig): number => {
+      // 1. Convert spot USD to country currency
+      const rateToCountry = exchangeRates[country.currency];
+      const spotPriceCountry = spotPriceUSD * rateToCountry;
 
-    // 2. Adjust for purity (compare 24k/fine 99.9% as benchmark for arbitrage)
-    const rawValueCountry = spotPriceCountry * 0.999;
+      // 2. Adjust for purity (compare 24k/fine 99.9% as benchmark for arbitrage)
+      const rawValueCountry = spotPriceCountry * 0.999;
 
-    // 3. Import duty
-    const importDuty = rawValueCountry * (country.importDuty / 100);
+      // 3. Import duty
+      const importDuty = rawValueCountry * (country.importDuty / 100);
 
-    // 4. VAT/GST
-    const isExempt = activeMetal === 'gold' && isGoldVatExempt(country.code);
-    const vatPercent = isExempt ? 0 : country.vatGst;
-    const vatGst = (rawValueCountry + importDuty) * (vatPercent / 100);
+      // 4. VAT/GST
+      const isExempt = activeMetal === 'gold' && isGoldVatExempt(country.code);
+      const vatPercent = isExempt ? 0 : country.vatGst;
+      const vatGst = (rawValueCountry + importDuty) * (vatPercent / 100);
 
-    // 5. Dealer premium
-    const premium = rawValueCountry * (country.dealerPremium / 100) + (country.fixedMintFeePerOz * rateToCountry);
+      // 5. Dealer premium
+      const premium =
+        rawValueCountry * (country.dealerPremium / 100) + country.fixedMintFeePerOz * rateToCountry;
 
-    // Final price in country local currency
-    const finalPriceCountry = rawValueCountry + importDuty + vatGst + premium;
+      // Final price in country local currency
+      const finalPriceCountry = rawValueCountry + importDuty + vatGst + premium;
 
-    // 6. Convert final price back to the dashboard's active currency
-    const rateToActive = exchangeRates[selectedCurrency];
-    const finalPriceActiveCurrency = (finalPriceCountry / rateToCountry) * rateToActive;
+      // 6. Convert final price back to the dashboard's active currency
+      const rateToActive = exchangeRates[selectedCurrency];
+      const finalPriceActiveCurrency = (finalPriceCountry / rateToCountry) * rateToActive;
 
-    return finalPriceActiveCurrency;
-  };
+      return finalPriceActiveCurrency;
+    },
+    [activeMetal, exchangeRates, selectedCurrency]
+  );
 
   // Convert history data points
   const chartPoints = useMemo(() => {
     const activeRate = exchangeRates[selectedCurrency];
     const unitMultiplier = WEIGHT_CONVERSIONS[weightUnit];
-    
+
     return historyData.map((pt) => {
       const spotUSD = pt.prices[activeMetal];
       const spotPriceActive = spotUSD * activeRate * unitMultiplier;
-      
+
       const priceA = getFinalPriceInActiveCurrency(spotUSD, countryA) * unitMultiplier;
-      const priceB = compareEnabled ? getFinalPriceInActiveCurrency(spotUSD, countryB) * unitMultiplier : 0;
+      const priceB = compareEnabled
+        ? getFinalPriceInActiveCurrency(spotUSD, countryB) * unitMultiplier
+        : 0;
 
       return {
         timestamp: pt.timestamp,
@@ -98,7 +107,17 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
         priceB,
       };
     });
-  }, [historyData, countryA, countryB, compareEnabled, activeMetal, selectedCurrency, weightUnit]);
+  }, [
+    historyData,
+    countryA,
+    countryB,
+    compareEnabled,
+    activeMetal,
+    selectedCurrency,
+    weightUnit,
+    exchangeRates,
+    getFinalPriceInActiveCurrency,
+  ]);
 
   // Chart bounds & scales
   const chartWidth = 780;
@@ -132,11 +151,12 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   // Project points into SVG viewport coordinates
   const svgCoords = useMemo(() => {
     if (chartPoints.length === 0) return [];
-    
+
     return chartPoints.map((pt, index) => {
       const x = paddingLeft + (index / (chartPoints.length - 1)) * innerWidth;
-      
-      const ySpot = paddingTop + innerHeight - ((pt.spotPrice - minY) / (maxY - minY)) * innerHeight;
+
+      const ySpot =
+        paddingTop + innerHeight - ((pt.spotPrice - minY) / (maxY - minY)) * innerHeight;
       const yA = paddingTop + innerHeight - ((pt.priceA - minY) / (maxY - minY)) * innerHeight;
       const yB = compareEnabled
         ? paddingTop + innerHeight - ((pt.priceB - minY) / (maxY - minY)) * innerHeight
@@ -167,10 +187,18 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   const formatXLabel = (timestamp: number) => {
     const date = new Date(timestamp);
     if (timeframe === '24h') {
-      return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', hour12: false });
+      return date.toLocaleTimeString(undefined, {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: false,
+      });
     }
     if (timeframe === '7d') {
-      return date.toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' });
+      return date.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'numeric',
+        day: 'numeric',
+      });
     }
     if (timeframe === '30d') {
       return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
@@ -347,7 +375,8 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                   textAnchor="end"
                   fontFamily="var(--mono)"
                 >
-                  {activeSymbol}{Math.round(val).toLocaleString()}
+                  {activeSymbol}
+                  {Math.round(val).toLocaleString()}
                 </text>
               </g>
             );
@@ -500,7 +529,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
               })}
             </div>
             <div className="tooltip-divider"></div>
-            
+
             <div className="tooltip-row spot">
               <span>Spot Price ({weightUnit}):</span>
               <strong>
@@ -515,7 +544,9 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             {compareEnabled ? (
               <>
                 <div className="tooltip-row country-a-val">
-                  <span>{countryA.flag} {countryA.name} ({weightUnit}):</span>
+                  <span>
+                    {countryA.flag} {countryA.name} ({weightUnit}):
+                  </span>
                   <strong>
                     {activeSymbol}
                     {hoveredPoint.priceA.toLocaleString(undefined, {
@@ -526,7 +557,9 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 </div>
 
                 <div className="tooltip-row country-b-val">
-                  <span>{countryB.flag} {countryB.name} ({weightUnit}):</span>
+                  <span>
+                    {countryB.flag} {countryB.name} ({weightUnit}):
+                  </span>
                   <strong>
                     {activeSymbol}
                     {hoveredPoint.priceB.toLocaleString(undefined, {
@@ -537,7 +570,7 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                 </div>
 
                 <div className="tooltip-divider"></div>
-                
+
                 {/* Arbitrage Metrics */}
                 {(() => {
                   const difference = Math.abs(hoveredPoint.priceA - hoveredPoint.priceB);
@@ -567,7 +600,8 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
                         <strong>{diffPct.toFixed(2)}%</strong>
                       </div>
                       <div className="arb-suggestion">
-                        {premiumCountry.flag} is {diffPct.toFixed(1)}% more expensive than {discountCountry.flag} due to local tax rates & import tariffs.
+                        {premiumCountry.flag} is {diffPct.toFixed(1)}% more expensive than{' '}
+                        {discountCountry.flag} due to local tax rates & import tariffs.
                       </div>
                     </div>
                   );
@@ -575,7 +609,9 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
               </>
             ) : (
               <div className="tooltip-row">
-                <span style={{ color: metalColor }}>{activeMetal.toUpperCase()} ({weightUnit}):</span>
+                <span style={{ color: metalColor }}>
+                  {activeMetal.toUpperCase()} ({weightUnit}):
+                </span>
                 <strong>
                   {activeSymbol}
                   {hoveredPoint.priceA.toLocaleString(undefined, {
@@ -596,11 +632,21 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             <Percent size={18} />
           </div>
           <div className="insight-content">
-            <h4>Global Price Disparity Analysis ({countryA.name} vs. {countryB.name})</h4>
+            <h4>
+              Global Price Disparity Analysis ({countryA.name} vs. {countryB.name})
+            </h4>
             <p>
-              Under current policies, {countryA.name} imposes an import duty of {countryA.importDuty}% and a local tax of {isGoldVatExempt(countryA.code) && activeMetal === 'gold' ? '0% (Gold exempt)' : `${countryA.vatGst}%`}. 
-              In comparison, {countryB.name} has a duty of {countryB.importDuty}% and local tax of {isGoldVatExempt(countryB.code) && activeMetal === 'gold' ? '0% (Gold exempt)' : `${countryB.vatGst}%`}. 
-              This causes a persistent price gap between physical metal retail quotes in these countries.
+              Under current policies, {countryA.name} imposes an import duty of{' '}
+              {countryA.importDuty}% and a local tax of{' '}
+              {isGoldVatExempt(countryA.code) && activeMetal === 'gold'
+                ? '0% (Gold exempt)'
+                : `${countryA.vatGst}%`}
+              . In comparison, {countryB.name} has a duty of {countryB.importDuty}% and local tax of{' '}
+              {isGoldVatExempt(countryB.code) && activeMetal === 'gold'
+                ? '0% (Gold exempt)'
+                : `${countryB.vatGst}%`}
+              . This causes a persistent price gap between physical metal retail quotes in these
+              countries.
             </p>
           </div>
         </div>

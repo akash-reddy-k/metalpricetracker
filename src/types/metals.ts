@@ -6,26 +6,26 @@ export type WeightUnit = 'oz' | 'g' | 'kg';
 
 export interface PurityOption {
   value: number; // 0.0 to 1.0 representation of purity
-  label: string;  // e.g. "24K (99.9%)", "22K (91.6%)", "Ster. (92.5%)"
+  label: string; // e.g. "24K (99.9%)", "22K (91.6%)", "Ster. (92.5%)"
 }
 
 export interface CountryTaxConfig {
   code: string;
   name: string;
   currency: CurrencyType;
-  importDuty: number;     // Percentage (e.g. 15 for 15%)
-  vatGst: number;         // Percentage (e.g. 18 for 18% GST/VAT)
-  dealerPremium: number;  // Percentage (e.g. 3.5 for 3.5% average premium)
+  importDuty: number; // Percentage (e.g. 15 for 15%)
+  vatGst: number; // Percentage (e.g. 18 for 18% GST/VAT)
+  dealerPremium: number; // Percentage (e.g. 3.5 for 3.5% average premium)
   fixedMintFeePerOz: number; // Fixed fee in USD per oz
-  flag: string;           // emoji representation of the flag
+  flag: string; // emoji representation of the flag
   defaultWeight?: number;
   defaultUnit?: WeightUnit;
 }
 
 export interface SpotPrices {
-  gold: number;      // per oz in USD
-  silver: number;    // per oz in USD
-  platinum: number;  // per oz in USD
+  gold: number; // per oz in USD
+  silver: number; // per oz in USD
+  platinum: number; // per oz in USD
   palladium: number; // per oz in USD
   timestamp: number; // UNIX epoch ms
 }
@@ -59,5 +59,3 @@ export interface CalculationResult {
   finalPrice: number;
   exchangeRate: number; // relative to USD (1 USD = X target currency)
 }
-
-

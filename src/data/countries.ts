@@ -1,4 +1,10 @@
-import type { CountryTaxConfig, PurityOption, MetalType, CurrencyType, WeightUnit } from '../types/metals';
+import type {
+  CountryTaxConfig,
+  PurityOption,
+  MetalType,
+  CurrencyType,
+  WeightUnit,
+} from '../types/metals';
 
 // Helper to load ENV variable or return default fallback
 const getEnvNum = (key: string, fallback: number): number => {
@@ -118,32 +124,32 @@ export const COUNTRIES: CountryTaxConfig[] = [
     flag: '🇨🇭',
     defaultWeight: getEnvNum('VITE_COUNTRY_CH_DEFAULT_WEIGHT', 1),
     defaultUnit: getEnvStr('VITE_COUNTRY_CH_DEFAULT_UNIT', 'oz') as WeightUnit,
-  }
+  },
 ];
 
 export const PURITY_OPTIONS: Record<MetalType, PurityOption[]> = {
   gold: [
     { value: 0.999, label: '24K (99.9% - Fine)' },
     { value: 0.916, label: '22K (91.6% - Crown Gold)' },
-    { value: 0.750, label: '18K (75.0% - Standard)' },
+    { value: 0.75, label: '18K (75.0% - Standard)' },
     { value: 0.583, label: '14K (58.3%)' },
-    { value: 0.417, label: '10K (41.7%)' }
+    { value: 0.417, label: '10K (41.7%)' },
   ],
   silver: [
     { value: 0.999, label: 'Fine Silver (99.9%)' },
     { value: 0.958, label: 'Britannia Silver (95.8%)' },
     { value: 0.925, label: 'Sterling Silver (92.5%)' },
-    { value: 0.900, label: 'Coin Silver (90.0%)' }
+    { value: 0.9, label: 'Coin Silver (90.0%)' },
   ],
   platinum: [
     { value: 0.999, label: 'Fine Platinum (99.9%)' },
-    { value: 0.950, label: 'Platinum 950 (95.0%)' },
-    { value: 0.900, label: 'Platinum 900 (90.0%)' }
+    { value: 0.95, label: 'Platinum 950 (95.0%)' },
+    { value: 0.9, label: 'Platinum 900 (90.0%)' },
   ],
   palladium: [
     { value: 0.999, label: 'Fine Palladium (99.9%)' },
-    { value: 0.950, label: 'Palladium 950 (95.0%)' }
-  ]
+    { value: 0.95, label: 'Palladium 950 (95.0%)' },
+  ],
 };
 
 export const EXCHANGE_RATES: Record<CurrencyType, number> = {
@@ -153,9 +159,9 @@ export const EXCHANGE_RATES: Record<CurrencyType, number> = {
   INR: 95.0,
   JPY: 155.0,
   CAD: 1.36,
-  AUD: 1.50,
+  AUD: 1.5,
   AED: 3.67,
-  CHF: 0.90
+  CHF: 0.9,
 };
 
 export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
@@ -167,11 +173,11 @@ export const CURRENCY_SYMBOLS: Record<CurrencyType, string> = {
   CAD: 'C$',
   AUD: 'A$',
   AED: 'د.إ',
-  CHF: 'CHF'
+  CHF: 'CHF',
 };
 
 // Returns whether Gold is VAT exempt in a country (EU standard + UK + CH + UAE + CA + AU)
 export function isGoldVatExempt(countryCode: string): boolean {
-  const exemptCountries = [];
+  const exemptCountries: string[] = [];
   return exemptCountries.includes(countryCode);
 }

@@ -2,25 +2,28 @@ import type { SpotPrices, HistoricalPricePoint } from '../types/metals';
 
 // Base prices in USD per troy ounce
 export const BASE_PRICES = {
-  gold: 2354.20,
+  gold: 2354.2,
   silver: 29.85,
-  platinum: 978.50,
-  palladium: 945.10,
+  platinum: 978.5,
+  palladium: 945.1,
 };
 
 // Seeded random number generator for reproducible history
 function createRandom(seed: number) {
   let h = seed ^ 0xdeadbeef;
-  return function() {
+  return function () {
     h = Math.imul(h ^ (h >>> 16), 2246822507);
     h = Math.imul(h ^ (h >>> 13), 3266489909);
     return ((h ^= h >>> 16) >>> 0) / 4294967296;
   };
 }
 
-export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | '5y', currentPrices: SpotPrices): HistoricalPricePoint[] {
+export function generateHistoricalData(
+  timeframe: '24h' | '7d' | '30d' | '1y' | '5y',
+  currentPrices: SpotPrices
+): HistoricalPricePoint[] {
   const now = currentPrices.timestamp;
-  
+
   let pointsCount = 30;
   let intervalMs = 24 * 60 * 60 * 1000; // 1 day default
 
@@ -58,7 +61,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
   // Generate backwards from now
   const tempPoints: HistoricalPricePoint[] = [];
-  
+
   // Start tracking prices backwards
   const prices = {
     gold: currentPrices.gold,
@@ -84,14 +87,21 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
   // Add the current point first
   tempPoints.push({
     timestamp: now,
-    prices: { ...prices }
+    prices: { ...prices },
   });
 
   for (let i = 1; i < pointsCount; i++) {
     const timestamp = now - i * intervalMs;
-    
+
     // Calculate random fluctuations (Brownian motion)
-    const goldVolatility = timeframe === '24h' ? 0.002 : timeframe === '7d' ? 0.006 : timeframe === '30d' ? 0.012 : 0.025;
+    const goldVolatility =
+      timeframe === '24h'
+        ? 0.002
+        : timeframe === '7d'
+          ? 0.006
+          : timeframe === '30d'
+            ? 0.012
+            : 0.025;
     const silverVolatility = goldVolatility * 1.5; // Silver is more volatile
     const platVol = goldVolatility * 1.2;
     const pallVol = goldVolatility * 1.4;
@@ -110,7 +120,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
     tempPoints.push({
       timestamp,
-      prices: { ...prices }
+      prices: { ...prices },
     });
   }
 
@@ -120,7 +130,7 @@ export function generateHistoricalData(timeframe: '24h' | '7d' | '30d' | '1y' | 
 
 export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   const rng = Math.random;
-  
+
   // Markets fluctuate slightly every tick (approx -0.15% to +0.15%)
   const fluctuate = (price: number, volatility = 0.0012) => {
     const changePercent = (rng() - 0.49) * 2 * volatility; // slightly positive bias to mimic long-term growth
@@ -130,13 +140,11 @@ export function simulatePriceTick(currentPrices: SpotPrices): SpotPrices {
   return {
     gold: fluctuate(currentPrices.gold, 0.0008),
     silver: fluctuate(currentPrices.silver, 0.0015),
-    platinum: fluctuate(currentPrices.platinum, 0.0010),
+    platinum: fluctuate(currentPrices.platinum, 0.001),
     palladium: fluctuate(currentPrices.palladium, 0.0012),
     timestamp: Date.now(),
   };
 }
-
-
 
 // Convert prices between ounces, grams, and kilograms
 // 1 troy ounce = 31.1034768 grams

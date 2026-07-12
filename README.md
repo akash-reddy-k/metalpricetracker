@@ -1,73 +1,125 @@
-# React + TypeScript + Vite
+# Live Precious Metals Spot Tracker & Global Tax Calculator
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A high-performance, real-time precious metals spot price dashboard and global acquisition tax localization calculator. Built with Hono (NodeJS/Cloudflare Workers compatible) and React (Vite, TypeScript, Vanilla CSS).
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🚀 Key Features
 
-## React Compiler
+### 📡 Real-Time Price Streaming
+*   **SSE (Server-Sent Events)**: Backend pushes live spot price ticks for Gold, Silver, Platinum, and Palladium directly from Yahoo Finance commodity contracts (`GC=F`, `SI=F`, `PL=F`, `PA=F`).
+*   **Memory-Cache Fallback**: In-memory caching on the backend ensures continuous server response if the external Yahoo Finance API suffers rate-limits or temporary outages.
+*   **Offline Fallback**: If the backend server fails or the client loses internet access, the dashboard automatically halts ticking and locks onto the latest successfully fetched prices, preventing volatile random price fluctuations.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 🌍 Dynamic GeoIP Localization
+*   **Resilient Geo-Detection**: Auto-detects the user's location on page load by querying multiple HTTPS fallback geolocation APIs in sequence (`freeipapi.com` ➔ `ipapi.co` ➔ `ipinfo.io`).
+*   **Automatic Country Selection**: Automatically pivots the currency, weight units, and tax profiles to match the user's home country.
 
-## Expanding the ESLint configuration
+### 💰 Localized Cost & Tax Calculator
+*   **Acquisition Cost Breakdown**: Computes raw metal spot value, custom tariffs & import duties, dealer premium markups, and local VAT/GST rates.
+*   **Metal-Level Tax Overrides**: Supports country-level tax structures with custom overrides per metal type (e.g. India's 3% GST on Gold/Silver vs 18% GST on Platinum/Palladium).
+*   **Weight Units Conversion**: Seamlessly scales calculations across ounces (`oz`), grams (`g`), kilograms (`kg`), pennyweight (`dwt`), and popular regional units:
+    *   **tola** (South Asia - exactly `10g`)
+    *   **tael** (Greater China - exactly `37.5g`)
+    *   **baht** (Thailand - exactly `15.244g`)
+    *   **mesghal** (Middle East - exactly `4.6083g`)
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### 📊 Interactive Visualizations
+*   **Historical Charts**: Interactive analytics charts visualizing price fluctuations across dynamic timeframes (`24h`, `7d`, `30d`, `1y`, `5y`).
+*   **Interactive Tooltips**: Comprehensive website-wide title tooltips explaining calculated price compositions (International Spot vs Duty Paid Spot vs Acquisition Subtotals).
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+### 📱 Premium Mobile-First Design
+*   **Aesthetics**: Glassmorphism dashboard styling featuring custom metallic price text gradients matching the physical gold, silver, platinum, and palladium colors.
+*   **Responsive Layout**: Mobile-first flex layout that neatly collapses into a single-column stack with touch-friendly controls.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+---
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+## 🛠️ Project Structure
+
+```
+├── .env                    # Local environment variables & country tax configs
+├── server.ts               # Runtime-agnostic Hono core routes & SSE logic
+├── entry.node.ts           # Node.js server launcher entry point
+├── package.json            # Scripts & dependencies
+├── tsconfig.json           # TSConfig references
+├── deployment/
+│   ├── wrangler.toml       # Cloudflare Workers serverless deployment config
+│   └── DEPLOYMENT.md       # Detailed multi-cloud deployment documentation
+├── src/
+│   ├── main.tsx            # React application entry point
+│   ├── App.tsx             # Main layout, SSE listener & state controller
+│   ├── index.css           # Styling system & utility class rules
+│   ├── components/         # Reusable JSX components (LivePriceCards, Calculator, AdSlot, AnalyticsChart)
+│   ├── data/               # Country profiles & exchange rate constants (countries.ts)
+│   ├── services/           # Price engine, conversions, history generator (priceEngine.ts)
+│   └── types/              # TypeScript declarations (metals.ts)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+## 💻 Local Setup & Installation
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### 1. Prerequisites
+*   Node.js (v18 or higher)
+*   NPM (v10 or higher)
+
+### 2. Install Dependencies
+```bash
+npm install
 ```
+
+### 3. Environment Configuration
+Create or configure the `.env` file in the root directory:
+```env
+# Server endpoints
+VITE_HONO_SERVER_URL=http://localhost:3000
+
+# Analytics Tag
+VITE_GOOGLE_TAG_ID=G-XXXXXXXXXX
+
+# India (INR) Tax Profile example
+VITE_COUNTRY_IN_IMPORT_DUTY=15.0
+VITE_COUNTRY_IN_VAT_GST=3.0
+VITE_COUNTRY_IN_DEFAULT_WEIGHT=10.0
+VITE_COUNTRY_IN_DEFAULT_UNIT=g
+```
+
+### 4. Running the Servers Locally
+
+*   **Start the Hono Backend Server** (Port `3000`):
+    ```bash
+    npm run server
+    ```
+*   **Start the React Development Server** (Vite):
+    ```bash
+    npm run dev
+    ```
+
+Open your browser to the URL printed in the console (usually `http://localhost:5173`).
+
+---
+
+## 🧪 Linting, Formatting & Compilation
+
+*   **Format code** using Prettier:
+    ```bash
+    npm run format
+    ```
+*   **Lint code** using ESLint:
+    ```bash
+    npm run lint
+    ```
+*   **Verify TypeScript build** (Client & Server):
+    ```bash
+    npm run build
+    ```
+
+---
+
+## 🌐 Production Deployment
+
+For detailed production instructions across multiple platforms, refer to the [deployment/DEPLOYMENT.md](file:///Users/akashre/WebstormProjects/metalpricetracker/deployment/DEPLOYMENT.md) guide:
+*   **VPS Hosting**: Setup PM2 and node processes.
+*   **PaaS Hosting**: Render and Heroku deployments using `entry.node.ts`.
+*   **Static CDN**: Vercel, Netlify, and Cloudflare Pages.
+*   **Serverless Workers**: Exposing endpoints directly via Cloudflare Workers (`npx wrangler deploy --config deployment/wrangler.toml`).

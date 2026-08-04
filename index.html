@@ -98,12 +98,6 @@
         }
     </script>
 
-    <noscript>
-        <h1>Live Gold Price in India Today</h1>
-        <p>Track real-time gold, silver, platinum and palladium spot prices
-            with GST and import duty calculator for India and 10+ countries.</p>
-    </noscript>
-
     <!-- Google Tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GOOGLE_TAG_ID%"></script>
     <script>
@@ -115,8 +109,59 @@
         gtag('config', '%VITE_GOOGLE_TAG_ID%');
     </script>
 </head>
-<body>
-<div id="root"></div>
-<script type="module" src="/src/main.tsx"></script>
-</body>
+  <body>
+
+  <!-- This is seen by Google even without JavaScript -->
+  <noscript>
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
+
+          <h1>Live Gold & Silver Prices in India | Import Duty & GST Calculator</h1>
+          <p>
+              Track real-time spot prices for Gold, Silver, Platinum, and Palladium.
+              Calculate GST-inclusive and import-duty-paid prices for India and 10+ countries.
+          </p>
+
+          <h2>Today's Precious Metal Prices in India (INR)</h2>
+          <ul>
+              <li><strong>Gold (24K)</strong> – Live spot price in INR per gram, updated every minute</li>
+              <li><strong>Silver</strong> – Live spot price in INR per gram and per kg</li>
+              <li><strong>Platinum</strong> – Live spot price in INR</li>
+              <li><strong>Palladium</strong> – Live spot price in INR</li>
+          </ul>
+
+          <h2>India Gold GST & Import Duty Calculator</h2>
+          <p>
+              Gold jewelry in India attracts 3% GST on gold value and 5% GST on making charges.
+              Basic customs duty on imported gold is 15%.
+              Use our free calculator to compute the exact landed cost including all taxes.
+          </p>
+
+          <h2>Frequently Asked Questions</h2>
+
+          <h3>What is the GST on gold in India?</h3>
+          <p>GST on gold in India is 3% on the gold value and 5% on making charges as of 2026.</p>
+
+          <h3>What is the import duty on gold in India in 2026?</h3>
+          <p>The basic customs duty on gold imported into India is 15% in 2026.</p>
+
+          <h3>How is gold price calculated in INR?</h3>
+          <p>
+              The COMEX spot price in USD per troy ounce is converted to INR using
+              the live USD/INR exchange rate, then divided by 31.1035 to get price per gram.
+          </p>
+
+          <h3>Which countries does the tax calculator support?</h3>
+          <p>
+              Our calculator supports India, USA, UK, UAE, Germany, Singapore,
+              Australia, Canada, Japan, and more — each with their correct
+              import duties and VAT/GST rates.
+          </p>
+
+          <p><strong>Note:</strong> Please enable JavaScript for the full live price experience.</p>
+      </div>
+  </noscript>
+
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

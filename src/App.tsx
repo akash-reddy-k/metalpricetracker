@@ -5,7 +5,6 @@ import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
-import { AdSlot } from './components/AdSlot';
 import { Coins, ShieldCheck } from 'lucide-react';
 import './index.css';
 
@@ -349,11 +348,6 @@ function App() {
           exchangeRates={exchangeRates}
         />
 
-        {/* Mock Banner Ad Slot */}
-        <div style={{ gridColumn: '1 / -1' }}>
-          <AdSlot id="ad-banner-top" type="banner" />
-        </div>
-
         {/* 2. Global Tax Cost Localization Calculator */}
         <Calculator
           activeMetal={activeMetal}
@@ -373,16 +367,6 @@ function App() {
           exchangeRates={exchangeRates}
         />
 
-        {/* Bottom Banner Ad Slot */}
-        <div style={{ gridColumn: '1 / -1', marginTop: '20px' }}>
-          <AdSlot
-            id="ad-banner-bottom"
-            type="banner"
-            title="Premium Precious Metal IRA Custody"
-            description="Protect your retirement savings with physical gold and silver tax-free. Get a free kit today."
-            sponsor="Goldco Bullion"
-          />
-        </div>
       </main>
 
       {/* Bottom Footer */}

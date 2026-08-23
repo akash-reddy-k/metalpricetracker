@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
-import { getPricePerUnit, BASE_PRICES } from '../services/priceEngine';
+import { getPricePerUnit } from '../services/priceEngine';
 import { COUNTRIES, getMetalImportDuty } from '../data/countries';
 import { Sparkles, Activity } from 'lucide-react';
 
@@ -11,6 +11,8 @@ interface LivePriceCardsProps {
   setActiveMetal: (metal: MetalType) => void;
   weightUnit: WeightUnit;
   exchangeRates: Record<CurrencyType, number>;
+  /** Session change percent per metal, as reported by the upstream feed. */
+  changePercents: Record<MetalType, number>;
 }
 
 const METAL_DETAILS: Record<
@@ -74,6 +76,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
   setActiveMetal,
   weightUnit,
   exchangeRates,
+  changePercents,
 }) => {
   const previousPrices = useRef<SpotPrices | null>(null);
   const [pulseStates, setPulseStates] = useState<Record<MetalType, 'up' | 'down' | null>>({
@@ -158,10 +161,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
       {(Object.keys(METAL_DETAILS) as MetalType[]).map((metal) => {
         const details = METAL_DETAILS[metal];
         const currentPriceUSD = prices[metal];
-        const basePriceUSD = BASE_PRICES[metal];
-
-        // Calculate total % change from the day's baseline
-        const changePercent = ((currentPriceUSD - basePriceUSD) / basePriceUSD) * 100;
+        const changePercent = changePercents[metal] ?? 0;
         const isPositive = changePercent >= 0;
 
         const pulse = pulseStates[metal];

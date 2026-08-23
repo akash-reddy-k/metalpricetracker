@@ -1,227 +1,195 @@
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { cors } from 'hono/cors';
+import { resolveTicker, DEFAULT_TICKERS, TICKERS } from './server/tickers.js';
+import { fetchHistory, isRange, RANGES, type Range } from './server/tradingview/history.js';
+import { buildIndiaRates, DEFAULT_DUTY } from './server/india.js';
+import { openCache, type HubNamespace } from './server/runtime.js';
+import type { Quote } from './server/tradingview/scanner.js';
 
-const MAX_REQUESTS_PER_INVOCATION = 120; // Expanded limit for continuous dashboard streaming
+export { PriceHub } from './server/priceHub.js';
 
-const app = new Hono();
+interface Env {
+  PRICE_HUB: HubNamespace;
+  /** Comma-separated allowed origins. Unset means allow any (dev only). */
+  ALLOWED_ORIGINS?: string;
+}
 
-// Enable CORS for our frontend client
-app.use('*', cors());
+const MAX_REQUESTED_TICKERS = 40;
+const MIN_THROTTLE_MS = 1000;
+const MAX_THROTTLE_MS = 3_600_000;
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.use('*', (c, next) => {
+  const configured = c.env?.ALLOWED_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  return cors({
+    origin: (origin) => {
+      if (!configured || configured.length === 0) return origin || '*';
+      return configured.includes(origin) ? origin : null;
+    },
+  })(c, next);
+});
 
 app.onError((err, c) => {
-  console.error('Global error handler caught:', err);
-  return c.json(
-    {
-      success: false,
-      errors: [{ code: 7000, message: err.message || 'Internal Server Error' }],
-    },
-    500
-  );
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'internal_error', message: err.message }, 500);
 });
 
-app.get('/', (c) => {
-  return c.text('MetalPriceTracker Hono Server is active. Access /live-quotes for SSE stream.');
-});
+/** Resolves and validates a client symbol list against the allowlist. */
+function parseTickers(raw: string | undefined): { tickers: string[]; rejected: string[] } {
+  if (!raw) return { tickers: [...DEFAULT_TICKERS], rejected: [] };
 
-// Map of common symbol aliases (including legacy Yahoo Finance tickers) to TradingView tickers
-const SYMBOL_ALIAS_MAP: Record<string, string> = {
-  'GC=F': 'TVC:GOLD',
-  GOLD: 'TVC:GOLD',
-  XAUUSD: 'TVC:GOLD',
-  'TVC:GOLD': 'TVC:GOLD',
-
-  'SI=F': 'TVC:SILVER',
-  SILVER: 'TVC:SILVER',
-  XAGUSD: 'TVC:SILVER',
-  'TVC:SILVER': 'TVC:SILVER',
-
-  'PL=F': 'TVC:PLATINUM',
-  PLATINUM: 'TVC:PLATINUM',
-  XPTUSD: 'TVC:PLATINUM',
-  'TVC:PLATINUM': 'TVC:PLATINUM',
-
-  'PA=F': 'TVC:PALLADIUM',
-  PALLADIUM: 'TVC:PALLADIUM',
-  XPDUSD: 'TVC:PALLADIUM',
-  'TVC:PALLADIUM': 'TVC:PALLADIUM',
-};
-
-function resolveTradingViewTicker(symbol: string): string {
-  const upper = symbol.toUpperCase().trim();
-  if (SYMBOL_ALIAS_MAP[upper]) {
-    return SYMBOL_ALIAS_MAP[upper];
-  }
-  if (upper.startsWith('FX_IDC:')) {
-    return upper;
-  }
-  if (upper.endsWith('=X')) {
-    const currency = upper.replace('=X', '');
-    return `FX_IDC:USD${currency}`;
-  }
-  if (upper.startsWith('USD') && upper.length === 6) {
-    return `FX_IDC:${upper}`;
-  }
-  return upper;
-}
-
-interface CachedPrice {
-  price: number;
-  change: number;
-  changePercent: string;
-  state: string;
-  timestamp: number;
-}
-
-const priceCache = new Map<string, CachedPrice>();
-
-interface TradingViewScanItem {
-  s: string; // Ticker e.g. "TVC:GOLD"
-  d: (number | null)[]; // Data array [close, change, change_abs]
-}
-
-interface TradingViewScanResponse {
-  totalCount?: number;
-  data?: TradingViewScanItem[];
-}
-
-async function fetchTradingViewBatch(
-  tickers: string[]
-): Promise<Map<string, { price: number; change: number; changePercent: string }>> {
-  const results = new Map<string, { price: number; change: number; changePercent: string }>();
-  if (tickers.length === 0) return results;
-
-  try {
-    const response = await fetch('https://scanner.tradingview.com/global/scan', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
-      },
-      body: JSON.stringify({
-        symbols: { tickers },
-        columns: ['close', 'change', 'change_abs'],
-      }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`TradingView scanner API returned status ${response.status}`);
-    }
-
-    const data = (await response.json()) as TradingViewScanResponse;
-
-    if (data && Array.isArray(data.data)) {
-      for (const item of data.data) {
-        if (item && item.s && Array.isArray(item.d)) {
-          const price = item.d[0] ?? 0;
-          const changePercentNum = item.d[1] ?? 0;
-          const changeVal = item.d[2] ?? 0;
-
-          results.set(item.s, {
-            price,
-            change: Number(changeVal.toFixed(4)),
-            changePercent: changePercentNum.toFixed(2),
-          });
-        }
-      }
-    }
-  } catch (error) {
-    console.error('[TradingView] Failed to fetch batch quote data:', error);
-  }
-
-  return results;
-}
-
-app.get('/live-quotes', (c) => {
-  const rawSymbols = c.req
-    .query('s')
-    ?.split(',')
+  const requested = raw
+    .split(',')
     .map((s) => s.trim())
-    .filter(Boolean) || ['TVC:GOLD', 'TVC:SILVER', 'TVC:PLATINUM', 'TVC:PALLADIUM'];
+    .filter(Boolean)
+    .slice(0, MAX_REQUESTED_TICKERS);
 
-  // Default interval to 10 seconds (10000ms) or use query param
-  const interval = c.req.query('i') ? parseInt(c.req.query('i')!) : 10000;
-  let requestCount = 0;
+  const tickers: string[] = [];
+  const rejected: string[] = [];
 
-  return streamSSE(c, async (stream) => {
-    while (!stream.aborted && !stream.closed && requestCount++ < MAX_REQUESTS_PER_INVOCATION) {
-      let anySuccessfulFetch = false;
-
-      // Determine unique TradingView tickers needed
-      const tickerToRequestedSymbolsMap = new Map<string, string[]>();
-      for (const rawSym of rawSymbols) {
-        const tvTicker = resolveTradingViewTicker(rawSym);
-        const list = tickerToRequestedSymbolsMap.get(tvTicker) || [];
-        list.push(rawSym);
-        tickerToRequestedSymbolsMap.set(tvTicker, list);
-      }
-
-      const uniqueTvTickers = Array.from(tickerToRequestedSymbolsMap.keys());
-      const batchData = await fetchTradingViewBatch(uniqueTvTickers);
-
-      // Process each requested symbol and write SSE
-      for (const rawSym of rawSymbols) {
-        const tvTicker = resolveTradingViewTicker(rawSym);
-        const liveData = batchData.get(tvTicker);
-
-        let priceData: { price: number; change: number; changePercent: string; state: string };
-
-        if (liveData && liveData.price > 0) {
-          priceData = {
-            price: liveData.price,
-            change: liveData.change,
-            changePercent: liveData.changePercent,
-            state: 'REGULAR',
-          };
-          priceCache.set(rawSym, {
-            ...priceData,
-            timestamp: Date.now(),
-          });
-          anySuccessfulFetch = true;
-        } else {
-          // Fall back to cached price if available
-          const cached = priceCache.get(rawSym);
-          if (cached) {
-            priceData = {
-              price: cached.price,
-              change: cached.change,
-              changePercent: cached.changePercent,
-              state: 'CACHED',
-            };
-            anySuccessfulFetch = true;
-          } else {
-            console.warn(`[TradingView] No live or cached data for symbol: ${rawSym}`);
-            continue;
-          }
-        }
-
-        try {
-          await stream.writeSSE({
-            event: 'quote',
-            data: JSON.stringify({
-              t: Date.now(),
-              symbol: rawSym,
-              price: priceData.price,
-              change: priceData.change,
-              changePercent: priceData.changePercent,
-              state: priceData.state,
-            }),
-          });
-        } catch (err) {
-          console.error(`Error writing SSE stream for ${rawSym}:`, err);
-        }
-      }
-
-      if (!anySuccessfulFetch && requestCount === 1) {
-        console.error('All price fetches failed on initial request');
-        stream.abort();
-        break;
-      }
-
-      await stream.sleep(interval);
+  for (const symbol of requested) {
+    const resolved = resolveTicker(symbol);
+    if (resolved) {
+      if (!tickers.includes(resolved)) tickers.push(resolved);
+    } else {
+      rejected.push(symbol);
     }
+  }
+
+  return { tickers: tickers.length > 0 ? tickers : [...DEFAULT_TICKERS], rejected };
+}
+
+function hub(env: Env) {
+  // A single named instance means one upstream poller process-wide.
+  return env.PRICE_HUB.get(env.PRICE_HUB.idFromName('global'));
+}
+
+app.get('/', (c) =>
+  c.json({
+    service: 'metalpricetracker',
+    endpoints: ['/live-quotes', '/snapshot', '/history', '/india-rates', '/tickers', '/health'],
+  })
+);
+
+app.get('/tickers', (c) => c.json({ tickers: TICKERS }));
+
+app.get('/health', async (c) => {
+  const response = await hub(c.env).fetch('https://hub/health');
+  const body = await response.json();
+  return c.json(body as Record<string, unknown>, response.ok ? 200 : 503);
+});
+
+app.get('/live-quotes', async (c) => {
+  const { tickers, rejected } = parseTickers(c.req.query('s'));
+
+  // Legacy clients pass `i` in milliseconds. Clamp it: this throttles delivery
+  // to the client and never affects how often we poll TradingView.
+  const rawThrottle = Number(c.req.query('i'));
+  const throttleMs = Number.isFinite(rawThrottle)
+    ? Math.min(Math.max(rawThrottle, MIN_THROTTLE_MS), MAX_THROTTLE_MS)
+    : 0;
+
+  const url = new URL('https://hub/subscribe');
+  url.searchParams.set('tickers', tickers.join(','));
+  url.searchParams.set('throttle', String(throttleMs));
+
+  const response = await hub(c.env).fetch(url.toString());
+
+  const headers = new Headers(response.headers);
+  if (rejected.length > 0) {
+    headers.set('X-Rejected-Symbols', rejected.join(','));
+  }
+  return new Response(response.body, { status: response.status, headers });
+});
+
+app.get('/snapshot', async (c) => {
+  const { tickers, rejected } = parseTickers(c.req.query('s'));
+  const response = await hub(c.env).fetch('https://hub/snapshot');
+  const snapshot = (await response.json()) as {
+    quotes: Record<string, Quote>;
+    lastPollAt: number;
+    stale: boolean;
+  };
+
+  const filtered: Record<string, Quote> = {};
+  for (const ticker of tickers) {
+    const quote = snapshot.quotes[ticker];
+    if (quote) filtered[ticker] = quote;
+  }
+
+  return c.json({
+    quotes: filtered,
+    lastPollAt: snapshot.lastPollAt,
+    stale: snapshot.stale,
+    rejected,
   });
 });
 
-export default app;
+app.get('/india-rates', async (c) => {
+  const response = await hub(c.env).fetch('https://hub/snapshot');
+  const snapshot = (await response.json()) as {
+    quotes: Record<string, Quote>;
+    lastPollAt: number;
+    stale: boolean;
+  };
 
+  const quotes = new Map(Object.entries(snapshot.quotes));
+  const rates = buildIndiaRates(quotes, DEFAULT_DUTY);
+
+  return c.json({
+    ...rates,
+    lastPollAt: snapshot.lastPollAt,
+    stale: snapshot.stale,
+    benchmarks: {
+      mcxGold: snapshot.quotes['MCX:GOLD1!'] ?? null,
+      mcxSilver: snapshot.quotes['MCX:SILVER1!'] ?? null,
+      comexGold: snapshot.quotes['COMEX:GC1!'] ?? null,
+      comexSilver: snapshot.quotes['COMEX:SI1!'] ?? null,
+    },
+  });
+});
+
+app.get('/history', async (c) => {
+  const symbol = c.req.query('symbol') ?? 'TVC:GOLD';
+  const ticker = resolveTicker(symbol);
+  if (!ticker) {
+    return c.json({ error: 'unknown_symbol', symbol }, 400);
+  }
+
+  const rangeParam = c.req.query('range') ?? '30d';
+  if (!isRange(rangeParam)) {
+    return c.json({ error: 'unknown_range', range: rangeParam, allowed: Object.keys(RANGES) }, 400);
+  }
+  const range: Range = rangeParam;
+
+  const cacheKey = new Request(`https://cache/history?symbol=${ticker}&range=${range}`);
+  const cache = await openCache('history');
+
+  const cached = await cache?.match(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const bars = await fetchHistory(ticker, range);
+    const response = Response.json(
+      { symbol: ticker, range, bars },
+      {
+        headers: {
+          'Cache-Control': `public, max-age=${RANGES[range].cacheSeconds}`,
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+    await cache?.put(cacheKey, response.clone());
+    return response;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[history] ${ticker} ${range} failed:`, message);
+    return c.json({ error: 'history_unavailable', symbol: ticker, range, message }, 502);
+  }
+});
+
+export default app;

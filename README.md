@@ -7,8 +7,8 @@ A high-performance, real-time precious metals spot price dashboard and global ac
 ## 🚀 Key Features
 
 ### 📡 Real-Time Price Streaming
-*   **SSE (Server-Sent Events)**: Backend pushes live spot price ticks for Gold, Silver, Platinum, and Palladium directly from Yahoo Finance commodity contracts (`GC=F`, `SI=F`, `PL=F`, `PA=F`).
-*   **Memory-Cache Fallback**: In-memory caching on the backend ensures continuous server response if the external Yahoo Finance API suffers rate-limits or temporary outages.
+*   **SSE (Server-Sent Events)**: Backend pushes live spot price ticks for Gold, Silver, Platinum, and Palladium directly from TradingView spot indices (`TVC:GOLD`, `TVC:SILVER`, `TVC:PLATINUM`, `TVC:PALLADIUM`).
+*   **Memory-Cache Fallback**: In-memory caching on the backend ensures continuous server response if the external TradingView scanner API suffers temporary network issues.
 *   **Offline Fallback**: If the backend server fails or the client loses internet access, the dashboard automatically halts ticking and locks onto the latest successfully fetched prices, preventing volatile random price fluctuations.
 
 ### 🌍 Dynamic GeoIP Localization

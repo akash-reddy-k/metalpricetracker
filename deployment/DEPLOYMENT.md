@@ -10,7 +10,7 @@ This document provides step-by-step instructions to compile, configure, and depl
 graph TD
   User(Client Browser) -->|HTTP/HTTPS| FE[Vite Static Frontend]
   User -->|SSE Connection| BE[Hono NodeJS Server]
-  BE -->|REST API| YF[Yahoo Finance API]
+  BE -->|REST API| TV[TradingView Scanner API]
   BE -->|Local Cache Fallback| Cache[(In-Memory Cache Map)]
 ```
 
@@ -18,7 +18,7 @@ graph TD
 
 ## 1. Backend Deployment (Hono Node Server)
 
-The Hono server is built with Node.js and TypeScript. It communicates with Yahoo Finance, manages an in-memory fallback cache, and streams quotes using Server-Sent Events (SSE).
+The Hono server is built with Node.js and TypeScript. It communicates with TradingView, manages an in-memory fallback cache, and streams quotes using Server-Sent Events (SSE).
 
 ### Prerequisites
 *   Node.js (v18 or higher)
@@ -87,7 +87,7 @@ Since the Hono application structure exports `app` natively (and we have fully d
    compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_modules" ]
    ```
    > [!NOTE]
-   > The `nodejs_compat` and `enable_nodejs_http_modules` compatibility flags are required because the backend's `yahoo-finance2` library relies on Node-specific socket classes and HTTP shims to query Yahoo Finance.
+   > The backend queries TradingView's market scanner API via native HTTP POST requests.
 3. Deploy the worker to your Cloudflare account by passing the config file path:
    ```bash
    npx wrangler deploy --config deployment/wrangler.toml

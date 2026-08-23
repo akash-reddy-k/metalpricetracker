@@ -27,7 +27,7 @@ function App() {
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
   const [reconnectTrigger, setReconnectTrigger] = useState<number>(0);
 
-  // Dynamic exchange rates from Yahoo Finance
+  // Dynamic exchange rates from TradingView
   const [exchangeRates, setExchangeRates] = useState<Record<CurrencyType, number>>(EXCHANGE_RATES);
 
   // Fetch status
@@ -98,7 +98,7 @@ function App() {
     setFetchError(null);
 
     const symbols =
-      'GC=F,SI=F,PL=F,PA=F,INR=X,EUR=X,GBP=X,JPY=X,CAD=X,AUD=X,AED=X,CHF=X,CNY=X,RUB=X,IDR=X,ZAR=X';
+      'TVC:GOLD,TVC:SILVER,TVC:PLATINUM,TVC:PALLADIUM,FX_IDC:USDINR,FX_IDC:USDEUR,FX_IDC:USDGBP,FX_IDC:USDJPY,FX_IDC:USDCAD,FX_IDC:USDAUD,FX_IDC:USDAED,FX_IDC:USDCHF,FX_IDC:USDCNY,FX_IDC:USDRUB,FX_IDC:USDIDR,FX_IDC:USDZAR';
     const sseUrl = `${HONO_SERVER_URL}/live-quotes?s=${symbols}&i=${refreshInterval * 1000}`;
 
     let eventSource: EventSource | null = null;
@@ -114,7 +114,7 @@ function App() {
       eventSource.onerror = (err) => {
         console.error('SSE stream error:', err);
         setFetchError(
-          `Failed to stream from Hono server. Falling back to local market simulations.`
+          `Failed to stream from Hono server. Falling back to cached market rates.`
         );
         setIsFetching(false);
       };
@@ -124,9 +124,13 @@ function App() {
           const quote = JSON.parse(event.data);
           const { symbol, price } = quote;
           if (price && typeof price === 'number') {
-            if (symbol.endsWith('=X')) {
-              // Parse currency ticker e.g. "INR=X"
-              const currency = symbol.split('=')[0] as CurrencyType;
+            if (symbol.startsWith('FX_IDC:USD') || symbol.endsWith('=X')) {
+              let currency: CurrencyType | null = null;
+              if (symbol.startsWith('FX_IDC:USD')) {
+                currency = symbol.replace('FX_IDC:USD', '') as CurrencyType;
+              } else if (symbol.endsWith('=X')) {
+                currency = symbol.split('=')[0] as CurrencyType;
+              }
               if (currency) {
                 setExchangeRates((prev) => ({
                   ...prev,
@@ -138,19 +142,19 @@ function App() {
             } else {
               setPrices((prev) => {
                 const next = { ...prev, timestamp: Date.now() };
-                if (symbol === 'GC=F') {
+                if (symbol === 'TVC:GOLD' || symbol === 'GC=F' || symbol === 'GOLD') {
                   next.gold = price;
                   BASE_PRICES.gold = price;
                 }
-                if (symbol === 'SI=F') {
+                if (symbol === 'TVC:SILVER' || symbol === 'SI=F' || symbol === 'SILVER') {
                   next.silver = price;
                   BASE_PRICES.silver = price;
                 }
-                if (symbol === 'PL=F') {
+                if (symbol === 'TVC:PLATINUM' || symbol === 'PL=F' || symbol === 'PLATINUM') {
                   next.platinum = price;
                   BASE_PRICES.platinum = price;
                 }
-                if (symbol === 'PA=F') {
+                if (symbol === 'TVC:PALLADIUM' || symbol === 'PA=F' || symbol === 'PALLADIUM') {
                   next.palladium = price;
                   BASE_PRICES.palladium = price;
                 }
@@ -317,7 +321,7 @@ function App() {
           {/* Update Interval */}
           <div
             className="currency-selector-wrapper"
-            title="Select the live pricing data refresh frequency for streaming quotes from Yahoo Finance."
+            title="Select the live pricing data refresh frequency for streaming quotes from TradingView."
           >
             <label htmlFor="refresh-select-main">Update Rate</label>
             <select

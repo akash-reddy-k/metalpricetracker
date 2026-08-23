@@ -79,20 +79,31 @@ Since the Hono application structure exports `app` natively (and we have fully d
    ```bash
    npm install --save-dev wrangler
    ```
-2. A `wrangler.toml` configuration file is provided inside the `deployment/` directory:
+2. `wrangler.toml` lives at the **repository root** so that a bare `npx wrangler deploy` — which is what
+   Cloudflare Workers Builds runs — discovers it automatically. It declares the `PRICE_HUB` Durable
+   Object that owns the single upstream TradingView poll loop:
    ```toml
    name = "yfinlib"
-   main = "../server.ts"
+   main = "server.ts"
    compatibility_date = "2026-07-12"
-   compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_modules" ]
+   compatibility_flags = [ "nodejs_compat" ]
+
+   [[durable_objects.bindings]]
+   name = "PRICE_HUB"
+   class_name = "PriceHub"
+
+   [[migrations]]
+   tag = "v1"
+   new_sqlite_classes = [ "PriceHub" ]
    ```
-   > [!NOTE]
-   > The backend queries TradingView's market scanner API via native HTTP POST requests.
-3. Deploy the worker to your Cloudflare account by passing the config file path:
+   > [!IMPORTANT]
+   > `name` must match the Worker name in the Cloudflare dashboard, otherwise the deploy targets a
+   > different Worker than the one the build is connected to.
+3. Set `ALLOWED_ORIGINS` to your frontend origin before going live — an empty value allows any origin.
+4. Deploy the worker to your Cloudflare account:
    ```bash
-   npx wrangler deploy --config deployment/wrangler.toml
+   npx wrangler deploy
    ```
-   *(Or navigate into the `deployment/` folder first and run `npx wrangler deploy`)*.
 
 ---
 

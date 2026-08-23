@@ -122,7 +122,7 @@ For detailed production instructions across multiple platforms, refer to the [de
 *   **VPS Hosting**: Setup PM2 and node processes.
 *   **PaaS Hosting**: Render and Heroku deployments using `entry.node.ts`.
 *   **Static CDN**: Vercel, Netlify, and Cloudflare Pages.
-*   **Serverless Workers**: Exposing endpoints directly via Cloudflare Workers (`npx wrangler deploy --config deployment/wrangler.toml`).
+*   **Serverless Workers**: Exposing endpoints directly via Cloudflare Workers (`npx wrangler deploy`).
 
 ### 🔗 Live Project URL Endpoints
 

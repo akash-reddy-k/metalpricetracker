@@ -1,5 +1,5 @@
-name = "metalpricetracker-api"
-main = "../server.ts"
+name = "yfinlib"
+main = "server.ts"
 compatibility_date = "2026-07-12"
 compatibility_flags = [ "nodejs_compat" ]
 

@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import type { MetalType, CurrencyType, CountryTaxConfig, WeightUnit } from '../types/metals';
 import { COUNTRIES, CURRENCY_SYMBOLS, isGoldVatExempt } from '../data/countries';
-import { generateHistoricalData, WEIGHT_CONVERSIONS } from '../services/priceEngine';
+import { WEIGHT_CONVERSIONS } from '../services/priceEngine';
+import { usePriceHistory } from '../hooks/usePriceHistory';
 import { TrendingUp, Percent, ArrowLeftRight, Layers } from 'lucide-react';
 
 interface AnalyticsChartProps {
@@ -47,10 +48,11 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   const countryA = COUNTRIES.find((c) => c.code === countryACode) || COUNTRIES[0];
   const countryB = COUNTRIES.find((c) => c.code === countryBCode) || COUNTRIES[1];
 
-  // 1. Generate core historical spot prices in USD
-  const historyData = useMemo(() => {
-    return generateHistoricalData(timeframe, spotPrices);
-  }, [timeframe, spotPrices]);
+  // Real OHLC closes for the active metal, in USD per troy ounce.
+  const { points: historyData, loading: historyLoading, error: historyError } = usePriceHistory(
+    activeMetal,
+    timeframe
+  );
 
   // Dynamic formula to calculate total retail markup / duty / VAT localized cost
   const getFinalPriceInActiveCurrency = useCallback(
@@ -86,29 +88,31 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     [activeMetal, exchangeRates, selectedCurrency]
   );
 
-  // Convert history data points
+  // Convert history data points, extending the series to the live spot price so
+  // the chart's right edge matches the price cards.
   const chartPoints = useMemo(() => {
+    if (historyData.length === 0) return [];
+
     const activeRate = exchangeRates[selectedCurrency];
     const unitMultiplier = WEIGHT_CONVERSIONS[weightUnit];
 
-    return historyData.map((pt) => {
-      const spotUSD = pt.prices[activeMetal];
-      const spotPriceActive = spotUSD * activeRate * unitMultiplier;
+    const series = [...historyData];
+    const livePrice = spotPrices[activeMetal];
+    if (livePrice > 0 && spotPrices.timestamp > 0) {
+      series.push({ timestamp: spotPrices.timestamp, price: livePrice });
+    }
 
-      const priceA = getFinalPriceInActiveCurrency(spotUSD, countryA) * unitMultiplier;
-      const priceB = compareEnabled
-        ? getFinalPriceInActiveCurrency(spotUSD, countryB) * unitMultiplier
-        : 0;
-
-      return {
-        timestamp: pt.timestamp,
-        spotPrice: spotPriceActive,
-        priceA,
-        priceB,
-      };
-    });
+    return series.map((pt) => ({
+      timestamp: pt.timestamp,
+      spotPrice: pt.price * activeRate * unitMultiplier,
+      priceA: getFinalPriceInActiveCurrency(pt.price, countryA) * unitMultiplier,
+      priceB: compareEnabled
+        ? getFinalPriceInActiveCurrency(pt.price, countryB) * unitMultiplier
+        : 0,
+    }));
   }, [
     historyData,
+    spotPrices,
     countryA,
     countryB,
     compareEnabled,
@@ -140,8 +144,11 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
       max = Math.max(max, pt.spotPrice, pt.priceA, compareEnabled ? pt.priceB : pt.spotPrice);
     });
 
-    // Add padding to margins
-    const delta = max - min;
+    // Keep the scale finite while history is loading or when every point is
+    // identical, otherwise every derived SVG coordinate becomes NaN.
+    if (!Number.isFinite(min) || !Number.isFinite(max)) return { minY: 0, maxY: 1 };
+
+    const delta = max - min || Math.abs(max) * 0.1 || 1;
     return {
       minY: Math.max(0, min - delta * 0.15),
       maxY: max + delta * 0.15,
@@ -153,7 +160,8 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     if (chartPoints.length === 0) return [];
 
     return chartPoints.map((pt, index) => {
-      const x = paddingLeft + (index / (chartPoints.length - 1)) * innerWidth;
+      const span = chartPoints.length - 1;
+      const x = paddingLeft + (span > 0 ? index / span : 0) * innerWidth;
 
       const ySpot =
         paddingTop + innerHeight - ((pt.spotPrice - minY) / (maxY - minY)) * innerHeight;
@@ -329,6 +337,23 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
 
       {/* Chart SVG Canvas */}
       <div className="chart-canvas-wrapper" style={{ position: 'relative' }}>
+        {(historyLoading || historyError) && (
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 5,
+              background: 'rgba(0, 0, 0, 0.35)',
+              fontSize: '13px',
+              color: historyError ? 'var(--down-red)' : 'var(--text-secondary)',
+            }}
+          >
+            {historyError ? `History unavailable — ${historyError}` : 'Loading history…'}
+          </div>
+        )}
         <svg
           className="analytics-svg"
           width="100%"

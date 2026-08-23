@@ -1,39 +1,56 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
-import { BASE_PRICES } from './services/priceEngine';
+import { FALLBACK_SPOT_PRICES } from './services/priceEngine';
 import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { LivePriceCards } from './components/LivePriceCards';
 import { Calculator } from './components/Calculator';
 import { AnalyticsChart } from './components/AnalyticsChart';
+import { useLiveQuotes } from './hooks/useLiveQuotes';
+import { METAL_TICKERS, TICKER_TO_CURRENCY } from './services/api';
 import { Coins, ShieldCheck } from 'lucide-react';
 import './index.css';
 
-// Read backend URL from environment variables, defaulting to local port 3000
-const HONO_SERVER_URL = import.meta.env.VITE_HONO_SERVER_URL || 'http://localhost:3000';
-
 function App() {
-  // Main price state
-  const [prices, setPrices] = useState<SpotPrices>(() => ({
-    gold: BASE_PRICES.gold,
-    silver: BASE_PRICES.silver,
-    platinum: BASE_PRICES.platinum,
-    palladium: BASE_PRICES.palladium,
-    timestamp: Date.now(),
-  }));
-
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType>('USD');
   const [activeMetal, setActiveMetal] = useState<MetalType>('gold');
   const [refreshInterval, setRefreshInterval] = useState<number>(60); // seconds
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
-  const [reconnectTrigger, setReconnectTrigger] = useState<number>(0);
 
-  // Dynamic exchange rates from Yahoo Finance
-  const [exchangeRates, setExchangeRates] = useState<Record<CurrencyType, number>>(EXCHANGE_RATES);
+  const { quotes, status, lastUpdated, stale, reconnect } = useLiveQuotes(refreshInterval * 1000);
 
-  // Fetch status
-  const [lastUpdated, setLastUpdated] = useState<Date | null>(new Date());
-  const [fetchError, setFetchError] = useState<string | null>(null);
-  const [isFetching, setIsFetching] = useState<boolean>(true);
+  // Spot prices fall back to the last shipped snapshot until the first quote lands.
+  const prices = useMemo<SpotPrices>(() => {
+    const read = (metal: MetalType) =>
+      quotes[METAL_TICKERS[metal]]?.price ?? FALLBACK_SPOT_PRICES[metal];
+    return {
+      gold: read('gold'),
+      silver: read('silver'),
+      platinum: read('platinum'),
+      palladium: read('palladium'),
+      timestamp: lastUpdated?.getTime() ?? 0,
+    };
+  }, [quotes, lastUpdated]);
+
+  const changePercents = useMemo<Record<MetalType, number>>(() => {
+    const read = (metal: MetalType) => quotes[METAL_TICKERS[metal]]?.changePercent ?? 0;
+    return {
+      gold: read('gold'),
+      silver: read('silver'),
+      platinum: read('platinum'),
+      palladium: read('palladium'),
+    };
+  }, [quotes]);
+
+  const exchangeRates = useMemo<Record<CurrencyType, number>>(() => {
+    const rates = { ...EXCHANGE_RATES };
+    for (const [ticker, quote] of Object.entries(quotes)) {
+      const currency = TICKER_TO_CURRENCY[ticker];
+      if (currency) rates[currency] = quote.price;
+    }
+    return rates;
+  }, [quotes]);
+
+  const isFetching = status === 'connecting';
 
   // Auto-detect user country on initial load using resilient fallback APIs
   useEffect(() => {
@@ -92,104 +109,6 @@ function App() {
     detectGeoLocation();
   }, []);
 
-  // SSE streaming connection effect
-  useEffect(() => {
-    setIsFetching(true);
-    setFetchError(null);
-
-    const symbols =
-      'GC=F,SI=F,PL=F,PA=F,INR=X,EUR=X,GBP=X,JPY=X,CAD=X,AUD=X,AED=X,CHF=X,CNY=X,RUB=X,IDR=X,ZAR=X';
-    const sseUrl = `${HONO_SERVER_URL}/live-quotes?s=${symbols}&i=${refreshInterval * 1000}`;
-
-    let eventSource: EventSource | null = null;
-
-    try {
-      eventSource = new EventSource(sseUrl);
-
-      eventSource.onopen = () => {
-        setIsFetching(false);
-        setFetchError(null);
-      };
-
-      eventSource.onerror = (err) => {
-        console.error('SSE stream error:', err);
-        setFetchError(
-          `Failed to stream from Hono server. Falling back to local market simulations.`
-        );
-        setIsFetching(false);
-      };
-
-      eventSource.addEventListener('quote', (event: MessageEvent) => {
-        try {
-          const quote = JSON.parse(event.data);
-          const { symbol, price } = quote;
-          if (price && typeof price === 'number') {
-            if (symbol.endsWith('=X')) {
-              // Parse currency ticker e.g. "INR=X"
-              const currency = symbol.split('=')[0] as CurrencyType;
-              if (currency) {
-                setExchangeRates((prev) => ({
-                  ...prev,
-                  [currency]: price,
-                }));
-                // Dynamically cache into the default EXCHANGE_RATES reference
-                EXCHANGE_RATES[currency] = price;
-              }
-            } else {
-              setPrices((prev) => {
-                const next = { ...prev, timestamp: Date.now() };
-                if (symbol === 'GC=F') {
-                  next.gold = price;
-                  BASE_PRICES.gold = price;
-                }
-                if (symbol === 'SI=F') {
-                  next.silver = price;
-                  BASE_PRICES.silver = price;
-                }
-                if (symbol === 'PL=F') {
-                  next.platinum = price;
-                  BASE_PRICES.platinum = price;
-                }
-                if (symbol === 'PA=F') {
-                  next.palladium = price;
-                  BASE_PRICES.palladium = price;
-                }
-                return next;
-              });
-            }
-            setLastUpdated(new Date());
-          }
-        } catch (parseErr) {
-          console.error('Error parsing quote SSE data:', parseErr);
-        }
-      });
-    } catch (err: unknown) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      setFetchError(errorMsg);
-      setIsFetching(false);
-    }
-
-    return () => {
-      if (eventSource) {
-        eventSource.close();
-      }
-    };
-  }, [refreshInterval, reconnectTrigger]);
-
-  // Resilient offline fallback: hold exact cached rates if SSE fails (prevent ticking simulated random prices)
-  useEffect(() => {
-    if (!fetchError) return;
-
-    // Set prices to exactly the in-memory cached BASE_PRICES (which was updated on every successful quote fetch)
-    setPrices({
-      gold: BASE_PRICES.gold,
-      silver: BASE_PRICES.silver,
-      platinum: BASE_PRICES.platinum,
-      palladium: BASE_PRICES.palladium,
-      timestamp: Date.now(),
-    });
-    setLastUpdated(new Date());
-  }, [fetchError]);
 
   // Sync global weight unit with country's default weight unit when currency changes in header
   useEffect(() => {
@@ -199,9 +118,23 @@ function App() {
     }
   }, [selectedCurrency]);
 
-  const handleReconnect = () => {
-    setReconnectTrigger((prev) => prev + 1);
-  };
+  const statusColor =
+    status === 'live' && !stale
+      ? '#10b981'
+      : status === 'offline'
+        ? '#ef4444'
+        : '#f59e0b';
+
+  const statusLabel =
+    status === 'connecting'
+      ? 'Connecting'
+      : status === 'reconnecting'
+        ? 'Reconnecting'
+        : status === 'offline'
+          ? 'Offline'
+          : stale
+            ? 'Stale feed'
+            : `Live • ${lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
   return (
     <>
@@ -210,7 +143,7 @@ function App() {
         <div className="logo-section">
           <div
             className="logo-symbol"
-            onClick={handleReconnect}
+            onClick={reconnect}
             style={{ cursor: 'pointer' }}
             title="Click to reconnect/re-sync"
           >
@@ -226,22 +159,18 @@ function App() {
           {/* Status Indicator */}
           <div
             className="currency-selector-wrapper"
-            onClick={handleReconnect}
+            onClick={reconnect}
             style={{ cursor: 'pointer' }}
             title="Click to reconnect"
           >
             <span
-              className={`status-dot ${isFetching ? 'connecting' : fetchError ? 'offline' : 'online'}`}
+              className={`status-dot ${status}`}
               style={{
                 width: '8px',
                 height: '8px',
                 borderRadius: '50%',
-                backgroundColor: isFetching ? '#f59e0b' : fetchError ? '#ef4444' : '#10b981',
-                boxShadow: isFetching
-                  ? '0 0 8px #f59e0b'
-                  : fetchError
-                    ? '0 0 8px #ef4444'
-                    : '0 0 8px #10b981',
+                backgroundColor: statusColor,
+                boxShadow: `0 0 8px ${statusColor}`,
                 display: 'inline-block',
                 marginRight: '6px',
               }}
@@ -255,11 +184,7 @@ function App() {
                 letterSpacing: '0.5px',
               }}
             >
-              {isFetching
-                ? 'Connecting'
-                : fetchError
-                  ? 'Offline Mode'
-                  : `Live • ${lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`}
+              {statusLabel}
             </span>
           </div>
 
@@ -317,7 +242,7 @@ function App() {
           {/* Update Interval */}
           <div
             className="currency-selector-wrapper"
-            title="Select the live pricing data refresh frequency for streaming quotes from Yahoo Finance."
+            title="Select the live pricing data refresh frequency for streaming quotes from TradingView."
           >
             <label htmlFor="refresh-select-main">Update Rate</label>
             <select
@@ -346,6 +271,7 @@ function App() {
           setActiveMetal={setActiveMetal}
           weightUnit={weightUnit}
           exchangeRates={exchangeRates}
+          changePercents={changePercents}
         />
 
         {/* 2. Global Tax Cost Localization Calculator */}

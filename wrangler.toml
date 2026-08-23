@@ -1,0 +1,18 @@
+name = "metalpricesapi"
+main = "server.ts"
+compatibility_date = "2026-08-24"
+compatibility_flags = [ "nodejs_compat" ]
+
+# A single named hub instance owns the upstream TradingView poll loop and fans
+# results out to every connected SSE client.
+[[durable_objects.bindings]]
+name = "PRICE_HUB"
+class_name = "PriceHub"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = [ "PriceHub" ]
+
+[vars]
+# Comma-separated origins allowed to call this API. Empty allows any (dev only).
+ALLOWED_ORIGINS = ""

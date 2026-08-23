@@ -1,236 +1,195 @@
 import { Hono } from 'hono';
-import { streamSSE } from 'hono/streaming';
 import { cors } from 'hono/cors';
-import YahooFinance from 'yahoo-finance2';
+import { resolveTicker, DEFAULT_TICKERS, TICKERS } from './server/tickers.js';
+import { fetchHistory, isRange, RANGES, type Range } from './server/tradingview/history.js';
+import { buildIndiaRates, DEFAULT_DUTY } from './server/india.js';
+import { openCache, type HubNamespace } from './server/runtime.js';
+import type { Quote } from './server/tradingview/scanner.js';
 
-const MAX_REQUESTS_PER_INVOCATION = 120; // Expanded limit for continuous dashboard usage
+export { PriceHub } from './server/priceHub.js';
 
-const app = new Hono();
+interface Env {
+  PRICE_HUB: HubNamespace;
+  /** Comma-separated allowed origins. Unset means allow any (dev only). */
+  ALLOWED_ORIGINS?: string;
+}
 
-// Enable CORS for our frontend client
-app.use('*', cors());
+const MAX_REQUESTED_TICKERS = 40;
+const MIN_THROTTLE_MS = 1000;
+const MAX_THROTTLE_MS = 3_600_000;
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.use('*', (c, next) => {
+  const configured = c.env?.ALLOWED_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+
+  return cors({
+    origin: (origin) => {
+      if (!configured || configured.length === 0) return origin || '*';
+      return configured.includes(origin) ? origin : null;
+    },
+  })(c, next);
+});
 
 app.onError((err, c) => {
-  console.error('Global error handler caught:', err);
-  return c.json(
-    {
-      success: false,
-      errors: [{ code: 7000, message: err.message || 'Internal Server Error' }],
-    },
-    500
-  );
+  console.error('Unhandled error:', err);
+  return c.json({ error: 'internal_error', message: err.message }, 500);
 });
 
-const yf = new YahooFinance({
-  suppressNotices: ['yahooSurvey'],
-});
+/** Resolves and validates a client symbol list against the allowlist. */
+function parseTickers(raw: string | undefined): { tickers: string[]; rejected: string[] } {
+  if (!raw) return { tickers: [...DEFAULT_TICKERS], rejected: [] };
 
-app.get('/', (c) => {
-  return c.text('MetalPriceTracker Hono Server is active. Access /live-quotes for SSE stream.');
-});
+  const requested = raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, MAX_REQUESTED_TICKERS);
 
-app.get('/live-quotes', (c) => {
-  const normalizedSymbol = new Set(
-    c.req
-      .query('s')
-      ?.split(',')
-      .map((s) => s.trim().toUpperCase())
-      .filter(Boolean) || ['GC=F']
-  );
+  const tickers: string[] = [];
+  const rejected: string[] = [];
 
-  // Default interval to 10 seconds (10000ms) to stay within Yahoo limits, or use query param
-  const interval = c.req.query('i') ? parseInt(c.req.query('i')!) : 10000;
-  let requestCount = 0;
-
-  return streamSSE(c, async (stream) => {
-    let anySuccessfulFetch: boolean;
-
-    const writePrice = async (symbol: string) => {
-      try {
-        const priceData = await fetchPrice(symbol);
-
-        // Safeguard to prevent crashing if price data is missing
-        const price = priceData.price ?? 0;
-        const change = priceData.change ?? 0;
-        const changeFormatted = change.toFixed(2);
-        const changePercent = price > 0 ? ((change / price) * 100).toFixed(2) : '0.00';
-
-        await stream.writeSSE({
-          event: 'quote',
-          data: JSON.stringify({
-            t: Date.now(),
-            symbol,
-            price,
-            change: changeFormatted,
-            state: priceData.state,
-            changePercent,
-            meta: priceData.meta,
-          }),
-        });
-        anySuccessfulFetch = true;
-      } catch (error) {
-        console.error(`Error fetching price for ${symbol}:`, error);
-      }
-    };
-
-    while (!stream.aborted && !stream.closed && requestCount++ < MAX_REQUESTS_PER_INVOCATION) {
-      anySuccessfulFetch = false; // Reset success flag for this tick
-
-      // Fetch prices for all symbols and wait for the interval sleep to complete
-      await Promise.allSettled([
-        ...Array.from(normalizedSymbol).map(writePrice),
-        stream.sleep(interval),
-      ]);
-
-      if (!anySuccessfulFetch && requestCount === 1) {
-        // If the first request fails completely, abort immediately
-        console.error('All price fetches failed on initial request');
-        stream.abort();
-        break;
-      }
-    }
-  });
-});
-
-interface YahooQuote {
-  symbol: string;
-  marketState?: string;
-  regularMarketPrice?: number;
-  regularMarketChange?: number;
-  postMarketPrice?: number;
-  postMarketChange?: number;
-  preMarketPrice?: number;
-  preMarketChange?: number;
-  state?: string;
-  price?: number;
-  change?: number;
-  meta?: Record<string, unknown>;
-}
-
-interface CachedPrice {
-  price: number;
-  change: number;
-  state: string;
-  meta: {
-    preMarketChange: number;
-    regularMarketChange: number;
-    postMarketChange: number;
-  };
-  timestamp: number;
-}
-
-const priceCache = new Map<string, CachedPrice>();
-
-async function fetchPrice(symbol: string) {
-  const fields = [
-    'marketState',
-    'regularMarketPrice',
-    'regularMarketChange',
-    'postMarketPrice',
-    'postMarketChange',
-    'preMarketPrice',
-    'preMarketChange',
-  ];
-
-  let result: YahooQuote | YahooQuote[] | null | undefined;
-  try {
-    result = (await yf.quoteCombine(symbol, { fields }, { validateResult: false })) as
-      YahooQuote | YahooQuote[] | null | undefined;
-  } catch (error: unknown) {
-    // Check cache fallback first for any non-validation error
-    if (
-      error &&
-      typeof error === 'object' &&
-      'name' in error &&
-      error.name === 'FailedYahooValidationError' &&
-      'result' in error
-    ) {
-      console.warn(`[YahooFinance] Validation failed for ${symbol}, falling back to error.result`);
-      result = (error as { result: YahooQuote | YahooQuote[] }).result;
+  for (const symbol of requested) {
+    const resolved = resolveTicker(symbol);
+    if (resolved) {
+      if (!tickers.includes(resolved)) tickers.push(resolved);
     } else {
-      const cached = priceCache.get(symbol);
-      if (cached) {
-        console.warn(
-          `[YahooFinance] Failed to fetch live rate for ${symbol}, falling back to cache (stale by ${Math.round(
-            (Date.now() - cached.timestamp) / 1000
-          )}s):`,
-          error
-        );
-        return cached;
-      }
-      throw error;
+      rejected.push(symbol);
     }
   }
 
-  // Handle case where result is a QuoteResponseArray (finding matching symbol) or single object
-  const quote = Array.isArray(result)
-    ? result.find((q): q is YahooQuote => !!q && q.symbol === symbol)
-    : result;
+  return { tickers: tickers.length > 0 ? tickers : [...DEFAULT_TICKERS], rejected };
+}
 
-  const {
-    marketState,
-    regularMarketPrice,
-    regularMarketChange,
-    postMarketPrice,
-    postMarketChange,
-    preMarketPrice,
-    preMarketChange,
-  } = quote || {};
+function hub(env: Env) {
+  // A single named instance means one upstream poller process-wide.
+  return env.PRICE_HUB.get(env.PRICE_HUB.idFromName('global'));
+}
 
-  const preMarketChangeVal = preMarketChange ?? 0;
-  const regularMarketChangeVal = regularMarketChange ?? 0;
-  const postMarketChangeVal = postMarketChange ?? 0;
+app.get('/', (c) =>
+  c.json({
+    service: 'metalpricetracker',
+    endpoints: ['/live-quotes', '/snapshot', '/history', '/india-rates', '/tickers', '/health'],
+  })
+);
 
-  // Safeguard: fallback to whichever price fields are populated if the current state field is empty
-  const fallbackPrice = regularMarketPrice ?? postMarketPrice ?? preMarketPrice ?? 0;
+app.get('/tickers', (c) => c.json({ tickers: TICKERS }));
 
-  let finalPriceData;
-  switch (marketState) {
-    case 'PRE':
-      finalPriceData = {
-        price: preMarketPrice ?? fallbackPrice,
-        change: preMarketChangeVal,
-        state: 'PRE',
-        meta: {
-          preMarketChange: preMarketChangeVal,
-          regularMarketChange: regularMarketChangeVal,
-          postMarketChange: postMarketChangeVal,
-        },
-      };
-      break;
-    case 'REGULAR':
-      finalPriceData = {
-        price: regularMarketPrice ?? fallbackPrice,
-        change: regularMarketChangeVal,
-        state: 'REGULAR',
-        meta: {
-          preMarketChange: preMarketChangeVal,
-          regularMarketChange: regularMarketChangeVal,
-          postMarketChange: postMarketChangeVal,
-        },
-      };
-      break;
-    default:
-      finalPriceData = {
-        price: postMarketPrice ?? fallbackPrice,
-        change: regularMarketChangeVal + postMarketChangeVal,
-        state: 'POST',
-        meta: {
-          preMarketChange: preMarketChangeVal,
-          regularMarketChange: regularMarketChangeVal,
-          postMarketChange: postMarketChangeVal,
-        },
-      };
-      break;
+app.get('/health', async (c) => {
+  const response = await hub(c.env).fetch('https://hub/health');
+  const body = await response.json();
+  return c.json(body as Record<string, unknown>, response.ok ? 200 : 503);
+});
+
+app.get('/live-quotes', async (c) => {
+  const { tickers, rejected } = parseTickers(c.req.query('s'));
+
+  // Legacy clients pass `i` in milliseconds. Clamp it: this throttles delivery
+  // to the client and never affects how often we poll TradingView.
+  const rawThrottle = Number(c.req.query('i'));
+  const throttleMs = Number.isFinite(rawThrottle)
+    ? Math.min(Math.max(rawThrottle, MIN_THROTTLE_MS), MAX_THROTTLE_MS)
+    : 0;
+
+  const url = new URL('https://hub/subscribe');
+  url.searchParams.set('tickers', tickers.join(','));
+  url.searchParams.set('throttle', String(throttleMs));
+
+  const response = await hub(c.env).fetch(url.toString());
+
+  const headers = new Headers(response.headers);
+  if (rejected.length > 0) {
+    headers.set('X-Rejected-Symbols', rejected.join(','));
+  }
+  return new Response(response.body, { status: response.status, headers });
+});
+
+app.get('/snapshot', async (c) => {
+  const { tickers, rejected } = parseTickers(c.req.query('s'));
+  const response = await hub(c.env).fetch('https://hub/snapshot');
+  const snapshot = (await response.json()) as {
+    quotes: Record<string, Quote>;
+    lastPollAt: number;
+    stale: boolean;
+  };
+
+  const filtered: Record<string, Quote> = {};
+  for (const ticker of tickers) {
+    const quote = snapshot.quotes[ticker];
+    if (quote) filtered[ticker] = quote;
   }
 
-  // Save successful response in cache
-  priceCache.set(symbol, {
-    ...finalPriceData,
-    timestamp: Date.now(),
+  return c.json({
+    quotes: filtered,
+    lastPollAt: snapshot.lastPollAt,
+    stale: snapshot.stale,
+    rejected,
   });
+});
 
-  return finalPriceData;
-}
+app.get('/india-rates', async (c) => {
+  const response = await hub(c.env).fetch('https://hub/snapshot');
+  const snapshot = (await response.json()) as {
+    quotes: Record<string, Quote>;
+    lastPollAt: number;
+    stale: boolean;
+  };
+
+  const quotes = new Map(Object.entries(snapshot.quotes));
+  const rates = buildIndiaRates(quotes, DEFAULT_DUTY);
+
+  return c.json({
+    ...rates,
+    lastPollAt: snapshot.lastPollAt,
+    stale: snapshot.stale,
+    benchmarks: {
+      mcxGold: snapshot.quotes['MCX:GOLD1!'] ?? null,
+      mcxSilver: snapshot.quotes['MCX:SILVER1!'] ?? null,
+      comexGold: snapshot.quotes['COMEX:GC1!'] ?? null,
+      comexSilver: snapshot.quotes['COMEX:SI1!'] ?? null,
+    },
+  });
+});
+
+app.get('/history', async (c) => {
+  const symbol = c.req.query('symbol') ?? 'TVC:GOLD';
+  const ticker = resolveTicker(symbol);
+  if (!ticker) {
+    return c.json({ error: 'unknown_symbol', symbol }, 400);
+  }
+
+  const rangeParam = c.req.query('range') ?? '30d';
+  if (!isRange(rangeParam)) {
+    return c.json({ error: 'unknown_range', range: rangeParam, allowed: Object.keys(RANGES) }, 400);
+  }
+  const range: Range = rangeParam;
+
+  const cacheKey = new Request(`https://cache/history?symbol=${ticker}&range=${range}`);
+  const cache = await openCache('history');
+
+  const cached = await cache?.match(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const bars = await fetchHistory(ticker, range);
+    const response = Response.json(
+      { symbol: ticker, range, bars },
+      {
+        headers: {
+          'Cache-Control': `public, max-age=${RANGES[range].cacheSeconds}`,
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+    await cache?.put(cacheKey, response.clone());
+    return response;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[history] ${ticker} ${range} failed:`, message);
+    return c.json({ error: 'history_unavailable', symbol: ticker, range, message }, 502);
+  }
+});
 
 export default app;

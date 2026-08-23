@@ -10,7 +10,7 @@ This document provides step-by-step instructions to compile, configure, and depl
 graph TD
   User(Client Browser) -->|HTTP/HTTPS| FE[Vite Static Frontend]
   User -->|SSE Connection| BE[Hono NodeJS Server]
-  BE -->|REST API| YF[Yahoo Finance API]
+  BE -->|REST API| TV[TradingView Scanner API]
   BE -->|Local Cache Fallback| Cache[(In-Memory Cache Map)]
 ```
 
@@ -18,7 +18,7 @@ graph TD
 
 ## 1. Backend Deployment (Hono Node Server)
 
-The Hono server is built with Node.js and TypeScript. It communicates with Yahoo Finance, manages an in-memory fallback cache, and streams quotes using Server-Sent Events (SSE).
+The Hono server is built with Node.js and TypeScript. It communicates with TradingView, manages an in-memory fallback cache, and streams quotes using Server-Sent Events (SSE).
 
 ### Prerequisites
 *   Node.js (v18 or higher)
@@ -79,20 +79,31 @@ Since the Hono application structure exports `app` natively (and we have fully d
    ```bash
    npm install --save-dev wrangler
    ```
-2. A `wrangler.toml` configuration file is provided inside the `deployment/` directory:
+2. `wrangler.toml` lives at the **repository root** so that a bare `npx wrangler deploy` — which is what
+   Cloudflare Workers Builds runs — discovers it automatically. It declares the `PRICE_HUB` Durable
+   Object that owns the single upstream TradingView poll loop:
    ```toml
-   name = "yfinlib"
-   main = "../server.ts"
-   compatibility_date = "2026-07-12"
-   compatibility_flags = [ "nodejs_compat", "enable_nodejs_http_modules" ]
+   name = "metalpricesapi"
+   main = "server.ts"
+   compatibility_date = "2026-08-24"
+   compatibility_flags = [ "nodejs_compat" ]
+
+   [[durable_objects.bindings]]
+   name = "PRICE_HUB"
+   class_name = "PriceHub"
+
+   [[migrations]]
+   tag = "v1"
+   new_sqlite_classes = [ "PriceHub" ]
    ```
-   > [!NOTE]
-   > The `nodejs_compat` and `enable_nodejs_http_modules` compatibility flags are required because the backend's `yahoo-finance2` library relies on Node-specific socket classes and HTTP shims to query Yahoo Finance.
-3. Deploy the worker to your Cloudflare account by passing the config file path:
+   > [!IMPORTANT]
+   > `name` must match the Worker name in the Cloudflare dashboard, otherwise the deploy targets a
+   > different Worker than the one the build is connected to.
+3. Set `ALLOWED_ORIGINS` to your frontend origin before going live — an empty value allows any origin.
+4. Deploy the worker to your Cloudflare account:
    ```bash
-   npx wrangler deploy --config deployment/wrangler.toml
+   npx wrangler deploy
    ```
-   *(Or navigate into the `deployment/` folder first and run `npx wrangler deploy`)*.
 
 ---
 

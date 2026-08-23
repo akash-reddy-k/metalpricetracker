@@ -1,6 +1,6 @@
-name = "yfinlib"
+name = "metalpricesapi"
 main = "server.ts"
-compatibility_date = "2026-07-12"
+compatibility_date = "2026-08-24"
 compatibility_flags = [ "nodejs_compat" ]
 
 # A single named hub instance owns the upstream TradingView poll loop and fans

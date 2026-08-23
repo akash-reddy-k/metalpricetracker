@@ -83,9 +83,9 @@ Since the Hono application structure exports `app` natively (and we have fully d
    Cloudflare Workers Builds runs — discovers it automatically. It declares the `PRICE_HUB` Durable
    Object that owns the single upstream TradingView poll loop:
    ```toml
-   name = "yfinlib"
+   name = "metalpricesapi"
    main = "server.ts"
-   compatibility_date = "2026-07-12"
+   compatibility_date = "2026-08-24"
    compatibility_flags = [ "nodejs_compat" ]
 
    [[durable_objects.bindings]]

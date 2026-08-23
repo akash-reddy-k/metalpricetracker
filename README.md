@@ -128,4 +128,4 @@ For detailed production instructions across multiple platforms, refer to the [de
 
 *   **Production App (Custom Domain)**: [https://metalprices.online/](https://metalprices.online/)
 *   **Cloudflare Pages Deploy (Frontend Mirror)**: [https://metalpricetracker.pages.dev/](https://metalpricetracker.pages.dev/)
-*   **Cloudflare Workers Deploy (Hono API Backend)**: [https://yfinlib.akashreddyengineer.workers.dev](https://yfinlib.akashreddyengineer.workers.dev)
+*   **Cloudflare Workers Deploy (Hono API Backend)**: [https://metalpricesapi.akashreddyengineer.workers.dev](https://metalpricesapi.akashreddyengineer.workers.dev)

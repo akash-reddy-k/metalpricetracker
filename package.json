@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "server": "tsx entry.node.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && tsx scripts/generate-pages.ts",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

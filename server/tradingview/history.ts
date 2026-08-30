@@ -1,5 +1,4 @@
 import { TICKERS } from '../tickers.js';
-import { isWorkersRuntime } from '../runtime.js';
 
 const WS_URL = 'wss://data.tradingview.com/socket.io/websocket?from=chart%2F';
 const ORIGIN = 'https://www.tradingview.com';
@@ -68,18 +67,6 @@ interface Socket {
  * requires an Upgrade fetch. Node has the constructor but no such fetch support.
  */
 async function connect(): Promise<Socket> {
-  if (isWorkersRuntime()) {
-    const response = await fetch(WS_URL.replace(/^wss:/, 'https:'), {
-      headers: { Upgrade: 'websocket', Origin: ORIGIN },
-    });
-    const ws = (response as unknown as { webSocket?: WebSocket & { accept(): void } }).webSocket;
-    if (!ws) {
-      throw new HistoryError(`websocket upgrade failed with status ${response.status}`);
-    }
-    ws.accept();
-    return wrap(ws);
-  }
-
   const ws = new WebSocket(WS_URL, { headers: { Origin: ORIGIN } } as unknown as string[]);
   await new Promise<void>((resolve, reject) => {
     ws.addEventListener('open', () => resolve(), { once: true });

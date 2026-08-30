@@ -1,0 +1,25 @@
+# Fly.io deployment config for the Node.js backend.
+# Docs: https://fly.io/docs/reference/configuration/
+#
+# First-time setup:
+#   1. Install flyctl: https://fly.io/docs/hands-on/install-flyctl/
+#   2. fly auth login
+#   3. fly launch --no-deploy   (imports this file, creates the app)
+#   4. fly secrets set ALLOWED_ORIGINS=https://your-pages-domain.pages.dev
+#   5. fly deploy
+
+app = "metalprices-api"        # change to your chosen app name (must be globally unique on Fly)
+primary_region = "sin"         # Singapore — low latency for India + SE Asia traffic
+
+[build]
+  dockerfile = "Dockerfile"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false   # IMPORTANT: never hibernate — poll loop must keep running
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"       # free tier machine (256 MB RAM, more than enough)

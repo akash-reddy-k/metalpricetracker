@@ -52,19 +52,21 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
         setStatus('live');
       };
 
-      source.addEventListener('quote', (event) => {
+      source.onmessage = (event) => {
         try {
-          const quote = JSON.parse((event as MessageEvent).data) as LiveQuote;
-          if (!Number.isFinite(quote.price) || quote.price <= 0) return;
+          const all = JSON.parse((event as MessageEvent).data) as Record<string, LiveQuote>;
+          const valid = Object.fromEntries(
+            Object.entries(all).filter(([, q]) => Number.isFinite(q.price) && q.price > 0)
+          );
+          if (Object.keys(valid).length === 0) return;
 
-          setQuotes((prev) => ({ ...prev, [quote.symbol]: quote }));
-          setStale(Boolean(quote.stale));
+          setQuotes(valid);
           setLastUpdated(new Date());
           setStatus('live');
         } catch {
           // A single malformed frame should not kill the stream.
         }
-      });
+      };
 
       source.addEventListener('status', (event) => {
         try {

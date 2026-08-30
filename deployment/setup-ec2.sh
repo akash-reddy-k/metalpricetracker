@@ -13,7 +13,7 @@ sudo npm install -g pm2
 
 echo "==> Cloning repo..."
 # Replace with your actual GitHub repo URL
-git clone https://github.com/YOUR_USERNAME/metalpricetracker.git
+git clone https://github.com/akash-reddy-k/metalpricetracker.git
 cd metalpricetracker
 
 echo "==> Installing dependencies..."

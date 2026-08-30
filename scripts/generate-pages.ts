@@ -16,9 +16,23 @@ const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 const SPOT = { gold: 4603.0, silver: 68.94, platinum: 1877.0, palladium: 1344.0 };
 const TROY_OZ_PER_GRAM = 1 / 31.1034768;
+const API_BASE = 'https://api.metalprices.online';
 
 type Metal = 'gold' | 'silver' | 'platinum' | 'palladium';
 const METALS: Metal[] = ['gold', 'silver', 'platinum', 'palladium'];
+
+/** TradingView ticker for each metal — used by the live-update script. */
+const METAL_TV_TICKER: Record<Metal, string> = {
+  gold: 'TVC:GOLD', silver: 'TVC:SILVER', platinum: 'TVC:PLATINUM', palladium: 'TVC:PALLADIUM',
+};
+
+/** TradingView FX ticker for each currency — empty string means USD (rate = 1). */
+const FX_TV_TICKER: Record<string, string> = {
+  USD: '', INR: 'FX_IDC:USDINR', EUR: 'FX_IDC:USDEUR', GBP: 'FX_IDC:USDGBP',
+  JPY: 'FX_IDC:USDJPY', CAD: 'FX_IDC:USDCAD', AUD: 'FX_IDC:USDAUD',
+  AED: 'FX_IDC:USDAED', CHF: 'FX_IDC:USDCHF', CNY: 'FX_IDC:USDCNY',
+  RUB: 'FX_IDC:USDRUB', IDR: 'FX_IDC:USDIDR', ZAR: 'FX_IDC:USDZAR',
+};
 
 const METAL_LABEL: Record<Metal, string> = {
   gold: 'Gold', silver: 'Silver', platinum: 'Platinum', palladium: 'Palladium',
@@ -456,7 +470,15 @@ ${siteHeader()}
     <p class="subtitle">${metalSym} · Prices as of ${BUILD_DATE} · Duty &amp; tax inclusive</p>
   </header>
 
-  <div class="price-highlight">
+  <div class="price-highlight"
+    data-metal-ticker="${METAL_TV_TICKER[metal]}"
+    data-fx-ticker="${FX_TV_TICKER[country.currency] ?? ''}"
+    data-duty-pct="${p.importDutyPct}"
+    data-vat-pct="${p.vatGstPct}"
+    data-unit-multiplier="${country.unitMultiplier}"
+    data-symbol="${sym}"
+    data-currency="${country.currency}"
+    data-unit-label="${unitLabel}">
     <div class="label">Duty-paid price per ${unitLabel}</div>
     <div class="amount" style="color:${metalColor}">${sym}${fmt(p.totalPerUnit, country.currency)}<span class="per">/ ${unitLabel}</span></div>
     <div class="spot-note">International spot: $${fmt(p.spotUSD, 'USD')}/oz — converted at ${sym}1 = $${(1 / country.rate).toFixed(4)}</div>
@@ -465,11 +487,11 @@ ${siteHeader()}
   <div class="breakdown">
     <h2>Price Breakdown</h2>
     <table>
-      <tr><td>Spot price (USD/oz)</td><td>$${fmt(p.spotUSD, 'USD')}</td></tr>
-      <tr><td>Spot in ${country.currency} (per ${unitLabel})</td><td>${sym}${fmt(p.spotPerUnit, country.currency)}</td></tr>
-      ${p.importDutyPct > 0 ? `<tr><td>Import duty (${p.importDutyPct}%)</td><td>+ ${sym}${fmt(p.importDutyAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">Import duty</td><td style="color:#475569">None</td></tr>'}
-      ${p.vatGstPct > 0 ? `<tr><td>VAT / GST (${p.vatGstPct}%)</td><td>+ ${sym}${fmt(p.vatAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">VAT / GST</td><td style="color:#475569">None (exempt)</td></tr>'}
-      <tr class="total"><td>Total duty-paid price / ${unitLabel}</td><td>${sym}${fmt(p.totalPerUnit, country.currency)}</td></tr>
+      <tr><td>Spot price (USD/oz)</td><td id="live-spot-usd">$${fmt(p.spotUSD, 'USD')}</td></tr>
+      <tr><td>Spot in ${country.currency} (per ${unitLabel})</td><td id="live-spot-local">${sym}${fmt(p.spotPerUnit, country.currency)}</td></tr>
+      ${p.importDutyPct > 0 ? `<tr><td>Import duty (${p.importDutyPct}%)</td><td id="live-duty-amt">+ ${sym}${fmt(p.importDutyAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">Import duty</td><td style="color:#475569">None</td></tr>'}
+      ${p.vatGstPct > 0 ? `<tr><td>VAT / GST (${p.vatGstPct}%)</td><td id="live-vat-amt">+ ${sym}${fmt(p.vatAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">VAT / GST</td><td style="color:#475569">None (exempt)</td></tr>'}
+      <tr class="total"><td>Total duty-paid price / ${unitLabel}</td><td id="live-total-row">${sym}${fmt(p.totalPerUnit, country.currency)}</td></tr>
     </table>
   </div>
 
@@ -493,6 +515,61 @@ ${siteHeader()}
 
   ${foot()}
 </div>
+<script>
+(function () {
+  var h = document.querySelector('.price-highlight');
+  if (!h) return;
+  var metalTicker  = h.dataset.metalTicker;
+  var fxTicker     = h.dataset.fxTicker;
+  var dutyPct      = parseFloat(h.dataset.dutyPct);
+  var vatPct       = parseFloat(h.dataset.vatPct);
+  var multiplier   = parseFloat(h.dataset.unitMultiplier);
+  var sym          = h.dataset.symbol;
+  var currency     = h.dataset.currency;
+  var unitLabel    = h.dataset.unitLabel;
+  var noDecimals   = ['JPY','IDR','RUB'].includes(currency);
+
+  function fmt(n) {
+    return n.toLocaleString('en-US', {
+      minimumFractionDigits: noDecimals ? 0 : 2,
+      maximumFractionDigits: noDecimals ? 0 : 2
+    });
+  }
+  function upd(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
+
+  fetch('${API_BASE}/snapshot')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var q = data.quotes || {};
+      var metal = q[metalTicker];
+      if (!metal || !metal.price) return;
+
+      var spotUSD     = metal.price;
+      var fxRate      = fxTicker ? ((q[fxTicker] && q[fxTicker].price) || 1) : 1;
+      var spotPerUnit = spotUSD * fxRate * multiplier;
+      var dutyAmt     = spotPerUnit * (dutyPct / 100);
+      var vatAmt      = (spotPerUnit + dutyAmt) * (vatPct / 100);
+      var total       = spotPerUnit + dutyAmt + vatAmt;
+      var usd2dp      = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+
+      var amountEl = h.querySelector('.amount');
+      if (amountEl) amountEl.innerHTML = sym + fmt(total) + '<span class="per"> / ' + unitLabel + '</span>';
+
+      var noteEl = h.querySelector('.spot-note');
+      if (noteEl) noteEl.textContent = 'Live spot: $' + spotUSD.toLocaleString('en-US', usd2dp) + '/oz — converted at ' + sym + '1 = $' + (1/fxRate).toFixed(4);
+
+      var sub = document.querySelector('.subtitle');
+      if (sub) sub.textContent = sub.textContent.replace(/Prices as of [\d-]+/, 'Live as of ' + new Date().toLocaleTimeString());
+
+      upd('live-spot-usd',   '$'  + spotUSD.toLocaleString('en-US', usd2dp));
+      upd('live-spot-local', sym  + fmt(spotPerUnit));
+      upd('live-duty-amt',   dutyPct > 0 ? '+ ' + sym + fmt(dutyAmt) : '');
+      upd('live-vat-amt',    vatPct  > 0 ? '+ ' + sym + fmt(vatAmt)  : '');
+      upd('live-total-row',  sym + fmt(total));
+    })
+    .catch(function() { /* keep static prices on error */ });
+})();
+</script>
 </body></html>`;
 }
 

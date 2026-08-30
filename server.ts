@@ -3,7 +3,7 @@ import { cors } from 'hono/cors';
 import { fetchQuotes } from './server/tradingview/scanner.js';
 import { fetchHistory, isRange, RANGES, type Range } from './server/tradingview/history.js';
 import { buildIndiaRates, DEFAULT_DUTY } from './server/india.js';
-import { DEFAULT_TICKERS, TICKERS, resolveTicker } from './server/tickers.js';
+import { ALL_TICKERS, TICKERS, resolveTicker } from './server/tickers.js';
 import type { Quote } from './server/tradingview/scanner.js';
 
 const POLL_MS = 30_000;
@@ -24,7 +24,7 @@ const clients = new Set<Writer>();
 
 async function poll() {
   try {
-    const quotes = await fetchQuotes(DEFAULT_TICKERS);
+    const quotes = await fetchQuotes(ALL_TICKERS);
     latestQuotes = Object.fromEntries(quotes.map((q) => [q.symbol, q]));
     lastPollAt = Date.now();
     consecutiveFailures = 0;

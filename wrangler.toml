@@ -1,18 +1,9 @@
-name = "metalpricesapi"
-main = "server.ts"
-compatibility_date = "2026-08-24"
-compatibility_flags = [ "nodejs_compat" ]
-
-# A single named hub instance owns the upstream TradingView poll loop and fans
-# results out to every connected SSE client.
-[[durable_objects.bindings]]
-name = "PRICE_HUB"
-class_name = "PriceHub"
-
-[[migrations]]
-tag = "v1"
-new_sqlite_classes = [ "PriceHub" ]
-
-[vars]
-# Comma-separated origins allowed to call this API. Empty allows any (dev only).
-ALLOWED_ORIGINS = ""
+# The API backend is now a plain Node.js/Hono server — deploy it to Railway,
+# Render, Fly.io, or any Node.js host using: npm run server
+#
+# This file is kept only in case you want to deploy the frontend worker
+# (static asset serving) through Cloudflare. For the live API, point
+# VITE_HONO_SERVER_URL at your Node.js deployment.
+#
+# name = "yfinlib"
+# main = "server.ts"

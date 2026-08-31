@@ -58,14 +58,7 @@ const historyCache = new Map<string, { bars: unknown; expiresAt: number }>();
 
 const app = new Hono();
 
-const ALLOWED = process.env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-app.use(
-  '*',
-  cors({
-    origin: ALLOWED.length > 0 ? (o) => (ALLOWED.includes(o) ? o : null) : '*',
-    allowMethods: ['GET', 'OPTIONS'],
-  })
-);
+app.use('*', cors({ origin: '*', allowMethods: ['GET', 'OPTIONS'] }));
 
 app.onError((err, c) => {
   console.error('Unhandled error:', err);

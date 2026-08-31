@@ -20,9 +20,11 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: frontend
         run: npm ci
 
       - name: Build
+        working-directory: frontend
         run: npm run build
         env:
           VITE_HONO_SERVER_URL: ${{ secrets.VITE_HONO_SERVER_URL }}
@@ -32,4 +34,4 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=metalpricetracker
+          command: pages deploy frontend/dist --project-name=metalpricetracker

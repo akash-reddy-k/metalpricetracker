@@ -1,0 +1,19 @@
+{
+  "name": "metalprices-backend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx --watch entry.node.ts",
+    "start": "tsx entry.node.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.0.8",
+    "hono": "^4.12.29",
+    "tsx": "^4.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.3",
+    "typescript": "~6.0.2"
+  }
+}

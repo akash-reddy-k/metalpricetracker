@@ -42,10 +42,12 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
     let attempts = 0;
     let disposed = false;
 
-    const connect = () => {
+    const connect = async () => {
       if (disposed) return;
+      const url = await liveQuotesUrl(throttleRef.current);
+      if (disposed) return; // cleanup may have run while awaiting the token
 
-      source = new EventSource(liveQuotesUrl(throttleRef.current));
+      source = new EventSource(url);
 
       source.onopen = () => {
         attempts = 0;

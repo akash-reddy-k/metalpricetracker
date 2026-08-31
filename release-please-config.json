@@ -1,0 +1,32 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "linked-versions": true,
+  "packages": {
+    "backend": {
+      "release-type": "node",
+      "package-name": "metalprices-backend",
+      "changelog-sections": [
+        { "type": "feat",     "section": "Features" },
+        { "type": "fix",      "section": "Bug Fixes" },
+        { "type": "perf",     "section": "Performance" },
+        { "type": "refactor", "section": "Improvements" },
+        { "type": "chore",    "hidden": true },
+        { "type": "docs",     "hidden": true },
+        { "type": "test",     "hidden": true }
+      ]
+    },
+    "frontend": {
+      "release-type": "node",
+      "package-name": "metalprices-frontend",
+      "changelog-sections": [
+        { "type": "feat",     "section": "Features" },
+        { "type": "fix",      "section": "Bug Fixes" },
+        { "type": "perf",     "section": "Performance" },
+        { "type": "refactor", "section": "Improvements" },
+        { "type": "chore",    "hidden": true },
+        { "type": "docs",     "hidden": true },
+        { "type": "test",     "hidden": true }
+      ]
+    }
+  }
+}

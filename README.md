@@ -1,131 +1,134 @@
-# Live Precious Metals Spot Tracker & Global Tax Calculator
+# MetalPrices.Online
 
-A high-performance, real-time precious metals spot price dashboard and global acquisition tax localization calculator. Built with Hono (NodeJS/Cloudflare Workers compatible) and React (Vite, TypeScript, Vanilla CSS).
+Real-time precious metals spot prices (Gold, Silver, Platinum, Palladium) with live duty-inclusive cost calculations for 13 countries.
 
----
-
-## 🚀 Key Features
-
-### 📡 Real-Time Price Streaming
-*   **SSE (Server-Sent Events)**: Backend pushes live spot price ticks for Gold, Silver, Platinum, and Palladium directly from TradingView spot indices (`TVC:GOLD`, `TVC:SILVER`, `TVC:PLATINUM`, `TVC:PALLADIUM`).
-*   **Memory-Cache Fallback**: In-memory caching on the backend ensures continuous server response if the external TradingView scanner API suffers temporary network issues.
-*   **Offline Fallback**: If the backend server fails or the client loses internet access, the dashboard automatically halts ticking and locks onto the latest successfully fetched prices, preventing volatile random price fluctuations.
-
-### 🌍 Dynamic GeoIP Localization
-*   **Resilient Geo-Detection**: Auto-detects the user's location on page load by querying multiple HTTPS fallback geolocation APIs in sequence (`freeipapi.com` ➔ `ipapi.co` ➔ `ipinfo.io`).
-*   **Automatic Country Selection**: Automatically pivots the currency, weight units, and tax profiles to match the user's home country.
-
-### 💰 Localized Cost & Tax Calculator
-*   **Acquisition Cost Breakdown**: Computes raw metal spot value, custom tariffs & import duties, dealer premium markups, and local VAT/GST rates.
-*   **Metal-Level Tax Overrides**: Supports country-level tax structures with custom overrides per metal type (e.g. India's 3% GST on Gold/Silver vs 18% GST on Platinum/Palladium).
-*   **Weight Units Conversion**: Seamlessly scales calculations across ounces (`oz`), grams (`g`), kilograms (`kg`), pennyweight (`dwt`), and popular regional units:
-    *   **tola** (South Asia - exactly `10g`)
-    *   **tael** (Greater China - exactly `37.5g`)
-    *   **baht** (Thailand - exactly `15.244g`)
-    *   **mesghal** (Middle East - exactly `4.6083g`)
-
-### 📊 Interactive Visualizations
-*   **Historical Charts**: Interactive analytics charts visualizing price fluctuations across dynamic timeframes (`24h`, `7d`, `30d`, `1y`, `5y`).
-*   **Interactive Tooltips**: Comprehensive website-wide title tooltips explaining calculated price compositions (International Spot vs Duty Paid Spot vs Acquisition Subtotals).
-
-### 📱 Premium Mobile-First Design
-*   **Aesthetics**: Glassmorphism dashboard styling featuring custom metallic price text gradients matching the physical gold, silver, platinum, and palladium colors.
-*   **Responsive Layout**: Mobile-first flex layout that neatly collapses into a single-column stack with touch-friendly controls.
+**Live site**: [metalprices.online](https://metalprices.online)
 
 ---
 
-## 🛠️ Project Structure
+## Project Structure
 
 ```
-├── .env                    # Local environment variables & country tax configs
-├── server.ts               # Runtime-agnostic Hono core routes & SSE logic
-├── entry.node.ts           # Node.js server launcher entry point
-├── package.json            # Scripts & dependencies
-├── tsconfig.json           # TSConfig references
-├── deployment/
-│   ├── wrangler.toml       # Cloudflare Workers serverless deployment config
-│   └── DEPLOYMENT.md       # Detailed multi-cloud deployment documentation
-├── src/
-│   ├── main.tsx            # React application entry point
-│   ├── App.tsx             # Main layout, SSE listener & state controller
-│   ├── index.css           # Styling system & utility class rules
-│   ├── components/         # Reusable JSX components (LivePriceCards, Calculator, AdSlot, AnalyticsChart)
-│   ├── data/               # Country profiles & exchange rate constants (countries.ts)
-│   ├── services/           # Price engine, conversions, history generator (priceEngine.ts)
-│   └── types/              # TypeScript declarations (metals.ts)
+metalpricetracker/
+  backend/          Node.js/Hono API server
+  frontend/         React/Vite SPA + static SEO pages
+  deployment/       Deployment docs
+  .github/          CI/CD workflows
 ```
 
 ---
 
-## 💻 Local Setup & Installation
+## Local Development
 
-### 1. Prerequisites
-*   Node.js (v18 or higher)
-*   NPM (v10 or higher)
+The backend and frontend are independent packages. Run them in two separate terminals.
 
-### 2. Install Dependencies
+### Terminal 1 — Backend (port 3000)
+
 ```bash
+cd backend
 npm install
+npm run dev      # hot reload on file changes
+# or: npm start  # no hot reload (same as production)
 ```
 
-### 3. Environment Configuration
-Create or configure the `.env` file in the root directory:
+The API is now available at `http://localhost:3000`. Test it:
+
+```bash
+curl http://localhost:3000/health
+curl http://localhost:3000/snapshot
+```
+
+### Terminal 2 — Frontend (port 5173)
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser. The frontend defaults to `http://localhost:3000` for the backend when `VITE_HONO_SERVER_URL` is not set, so no extra config is needed locally.
+
+### Optional — set a custom backend URL
+
+Create `frontend/.env.local`:
+
 ```env
-# Server endpoints
 VITE_HONO_SERVER_URL=http://localhost:3000
-
-# Analytics Tag
-VITE_GOOGLE_TAG_ID=G-XXXXXXXXXX
-
-# India (INR) Tax Profile example
-VITE_COUNTRY_IN_IMPORT_DUTY=15.0
-VITE_COUNTRY_IN_VAT_GST=3.0
-VITE_COUNTRY_IN_DEFAULT_WEIGHT=10.0
-VITE_COUNTRY_IN_DEFAULT_UNIT=g
 ```
 
-### 4. Running the Servers Locally
+---
 
-*   **Start the Hono Backend Server** (Port `3000`):
-    ```bash
-    npm run server
-    ```
-*   **Start the React Development Server** (Vite):
-    ```bash
-    npm run dev
-    ```
+## Available Scripts
 
-Open your browser to the URL printed in the console (usually `http://localhost:5173`).
+### Backend (`cd backend`)
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start with hot reload (development) |
+| `npm start` | Start without hot reload (production-like) |
+| `npx tsc -p tsconfig.json --noEmit` | Typecheck |
+
+### Frontend (`cd frontend`)
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start Vite dev server |
+| `npm run build` | Production build + generate SEO pages |
+| `npm run lint` | ESLint |
+| `npm run format` | Prettier |
+| `npm run preview` | Preview production build locally |
 
 ---
 
-## 🧪 Linting, Formatting & Compilation
+## Production Deployment
 
-*   **Format code** using Prettier:
-    ```bash
-    npm run format
-    ```
-*   **Lint code** using ESLint:
-    ```bash
-    npm run lint
-    ```
-*   **Verify TypeScript build** (Client & Server):
-    ```bash
-    npm run build
-    ```
+| | Platform | Deploys when |
+|---|---|---|
+| **Frontend** | Cloudflare Pages | GitHub release published |
+| **Backend** | Render | GitHub release published |
+
+Both deploy from the same release tag via a single workflow (`.github/workflows/deploy.yml`).
+Render auto-deploy must be **disabled** — deploys only via the release workflow.
+
+**Backend** (Render settings):
+- Root directory: `backend`
+- Build command: `npm ci`
+- Start command: `npm start`
+
+**Frontend** (Cloudflare Pages settings):
+- Root directory: `frontend`
+- Build command: `npm ci && npm run build`
+- Build output: `dist`
+
+### Required GitHub secrets (repo → Settings → Secrets → Actions)
+
+| Secret | Description |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | CF API token with Pages:Edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `VITE_HONO_SERVER_URL` | Backend URL e.g. `https://api.metalprices.online` |
+| `RENDER_DEPLOY_HOOK` | Render deploy hook URL (Settings → Deploy Hook) |
+
+### Required environment variables
+
+**Render** (backend):
+- None required — CORS is open to all origins
+
+**Cloudflare Pages** (frontend):
+- `VITE_HONO_SERVER_URL` — e.g. `https://api.metalprices.online`
+- `VITE_GOOGLE_TAG_ID` — Google Analytics tag (optional)
 
 ---
 
-## 🌐 Production Deployment
+## API Endpoints
 
-For detailed production instructions across multiple platforms, refer to the [deployment/DEPLOYMENT.md](file:///Users/akashre/WebstormProjects/metalpricetracker/deployment/DEPLOYMENT.md) guide:
-*   **VPS Hosting**: Setup PM2 and node processes.
-*   **PaaS Hosting**: Render and Heroku deployments using `entry.node.ts`.
-*   **Static CDN**: Vercel, Netlify, and Cloudflare Pages.
-*   **Serverless Workers**: Exposing endpoints directly via Cloudflare Workers (`npx wrangler deploy`).
+Base URL: `https://api.metalprices.online`
 
-### 🔗 Live Project URL Endpoints
-
-*   **Production App (Custom Domain)**: [https://metalprices.online/](https://metalprices.online/)
-*   **Cloudflare Pages Deploy (Frontend Mirror)**: [https://metalpricetracker.pages.dev/](https://metalpricetracker.pages.dev/)
-*   **Cloudflare Workers Deploy (Hono API Backend)**: [https://metalpricesapi.akashreddyengineer.workers.dev](https://metalpricesapi.akashreddyengineer.workers.dev)
+| Endpoint | Description |
+|---|---|
+| `GET /health` | Server health + uptime info |
+| `GET /snapshot` | Latest quotes snapshot |
+| `GET /live-quotes` | SSE stream — push updates every 30s |
+| `GET /history?symbol=TVC:GOLD&range=30d` | OHLC bar history |
+| `GET /india-rates` | India-specific purity/duty breakdown |
+| `GET /tickers` | Allowlisted ticker list |

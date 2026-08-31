@@ -537,7 +537,12 @@ ${siteHeader()}
   }
   function upd(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
 
-  fetch('${API_BASE}/snapshot')
+  fetch('${API_BASE}/token')
+    .then(function(r) { return r.json(); })
+    .then(function(t) {
+      var opts = t && t.token ? { headers: { 'X-Token': t.token } } : {};
+      return fetch('${API_BASE}/snapshot', opts);
+    })
     .then(function(r) { return r.json(); })
     .then(function(data) {
       var q = data.quotes || {};

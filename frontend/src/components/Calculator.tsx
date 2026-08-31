@@ -42,6 +42,9 @@ export const Calculator: React.FC<CalculatorProps> = ({
   // Custom fixed mint/processing fee (only for bullion)
   const [customMintFee, setCustomMintFee] = useState<string>('');
 
+  // VAT/GST is opt-in: p1 (without) always shown, p2 (with) shown only when checked.
+  const [includeVat, setIncludeVat] = useState<boolean>(false);
+
   const currentCountry = COUNTRIES.find((c) => c.currency === selectedCurrency) || COUNTRIES[0];
 
   // Sync local weight unit when global header weight unit changes
@@ -151,6 +154,11 @@ export const Calculator: React.FC<CalculatorProps> = ({
   const res = calculateCosts();
   const symbol = CURRENCY_SYMBOLS[selectedCurrency];
 
+  // p1 excludes VAT/GST; p2 adds it. res.finalPrice already includes vatGstValue.
+  const finalPriceExVat = res.finalPrice - res.vatGstValue;
+  const finalPriceIncVat = res.finalPrice;
+  const effectiveTotal = includeVat ? finalPriceIncVat : finalPriceExVat;
+
   const formatCost = (val: number) => {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
@@ -160,13 +168,13 @@ export const Calculator: React.FC<CalculatorProps> = ({
     }).format(val);
   };
 
-  // Percentages for bar chart
-  const taxSum = res.importDutyValue + res.vatGstValue;
-  const rawPct = res.finalPrice > 0 ? (res.rawMetalValue / res.finalPrice) * 100 : 0;
-  const taxPct = res.finalPrice > 0 ? (taxSum / res.finalPrice) * 100 : 0;
+  // Percentages for bar chart — base on effectiveTotal so the bar tracks the VAT toggle.
+  const taxSum = res.importDutyValue + (includeVat ? res.vatGstValue : 0);
+  const rawPct = effectiveTotal > 0 ? (res.rawMetalValue / effectiveTotal) * 100 : 0;
+  const taxPct = effectiveTotal > 0 ? (taxSum / effectiveTotal) * 100 : 0;
   const premPct =
-    res.finalPrice > 0
-      ? ((res.dealerPremiumValue + res.makingChargesValue) / res.finalPrice) * 100
+    effectiveTotal > 0
+      ? ((res.dealerPremiumValue + res.makingChargesValue) / effectiveTotal) * 100
       : 0;
 
   return (
@@ -301,6 +309,20 @@ export const Calculator: React.FC<CalculatorProps> = ({
               />
             </div>
           )}
+
+          {/* VAT/GST opt-in toggle */}
+          <div className="input-group">
+            <label htmlFor="calc-include-vat">Consumption Tax</label>
+            <label className="vat-toggle" htmlFor="calc-include-vat">
+              <input
+                id="calc-include-vat"
+                type="checkbox"
+                checked={includeVat}
+                onChange={(e) => setIncludeVat(e.target.checked)}
+              />
+              <span>Include VAT / GST in total</span>
+            </label>
+          </div>
         </div>
 
         {/* Local Rate Details */}
@@ -392,32 +414,34 @@ export const Calculator: React.FC<CalculatorProps> = ({
             </div>
           )}
 
-          <div
-            className="receipt-row"
-            title={`Consumption tax (VAT/GST) applied in ${currentCountry.name}. For jewellery this is standard rate; bullion gold may be exempt.`}
-          >
-            <div>
-              <span>Value Added Tax (VAT / GST)</span>
-              <small>
-                {activeMetal === 'gold' &&
-                isGoldVatExempt(currentCountry.code) &&
-                productType === 'bullion'
-                  ? 'Exempt (Investment Gold)'
-                  : `${getMetalVatGst(currentCountry, activeMetal)}% on (Metal + Duty${res.makingChargesValue > 0 ? ' + Making' : ''})`}
-              </small>
-            </div>
-            <span
-              className={
-                activeMetal === 'gold' &&
-                isGoldVatExempt(currentCountry.code) &&
-                productType === 'bullion'
-                  ? 'exempt-text'
-                  : ''
-              }
+          {includeVat && (
+            <div
+              className="receipt-row"
+              title={`Consumption tax (VAT/GST) applied in ${currentCountry.name}. For jewellery this is standard rate; bullion gold may be exempt.`}
             >
-              {formatCost(res.vatGstValue)}
-            </span>
-          </div>
+              <div>
+                <span>Value Added Tax (VAT / GST)</span>
+                <small>
+                  {activeMetal === 'gold' &&
+                  isGoldVatExempt(currentCountry.code) &&
+                  productType === 'bullion'
+                    ? 'Exempt (Investment Gold)'
+                    : `${getMetalVatGst(currentCountry, activeMetal)}% on (Metal + Duty${res.makingChargesValue > 0 ? ' + Making' : ''})`}
+                </small>
+              </div>
+              <span
+                className={
+                  activeMetal === 'gold' &&
+                  isGoldVatExempt(currentCountry.code) &&
+                  productType === 'bullion'
+                    ? 'exempt-text'
+                    : ''
+                }
+              >
+                {formatCost(res.vatGstValue)}
+              </span>
+            </div>
+          )}
 
           {productType === 'bullion' && (
             <div
@@ -439,11 +463,21 @@ export const Calculator: React.FC<CalculatorProps> = ({
 
           <div
             className="receipt-row total"
-            title="The final price the consumer pays, summing raw metal value, government tariffs, dealer premium, and consumption taxes."
+            title="Price excluding VAT/GST — raw metal value, import duties, and dealer premium only."
           >
-            <span>Total Consumer Cost</span>
-            <span>{formatCost(res.finalPrice)}</span>
+            <span>Total{includeVat ? ' (excl. VAT/GST)' : ' Consumer Cost'}</span>
+            <span>{formatCost(finalPriceExVat)}</span>
           </div>
+
+          {includeVat && (
+            <div
+              className="receipt-row total grand"
+              title="Price including VAT/GST — the full consumer cost with consumption tax added."
+            >
+              <span>Total (incl. VAT/GST)</span>
+              <span>{formatCost(finalPriceIncVat)}</span>
+            </div>
+          )}
 
           {/* Proportional cost visualizer */}
           <div className="proportional-cost-bar">

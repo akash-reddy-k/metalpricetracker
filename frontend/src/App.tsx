@@ -1,24 +1,21 @@
 import { useState, useEffect, useMemo } from 'react';
-import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from './types/metals';
+import { Outlet, NavLink } from 'react-router-dom';
+import type { SpotPrices, MetalType, CurrencyType, WeightUnit, AppOutletContext } from './types/metals';
 import { FALLBACK_SPOT_PRICES } from './services/priceEngine';
 import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
-import { LivePriceCards } from './components/LivePriceCards';
-import { Calculator } from './components/Calculator';
-import { AnalyticsChart } from './components/AnalyticsChart';
 import { useLiveQuotes } from './hooks/useLiveQuotes';
 import { METAL_TICKERS, TICKER_TO_CURRENCY } from './services/api';
-import { Coins, ShieldCheck } from 'lucide-react';
+import { Coins, ShieldCheck, Home, BookOpen, Lightbulb } from 'lucide-react';
 import './index.css';
 
 function App() {
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType>('USD');
   const [activeMetal, setActiveMetal] = useState<MetalType>('gold');
-  const [refreshInterval, setRefreshInterval] = useState<number>(60); // seconds
+  const [refreshInterval, setRefreshInterval] = useState<number>(60);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('oz');
 
   const { quotes, status, lastUpdated, stale, reconnect } = useLiveQuotes(refreshInterval * 1000);
 
-  // Spot prices fall back to the last shipped snapshot until the first quote lands.
   const prices = useMemo<SpotPrices>(() => {
     const read = (metal: MetalType) =>
       quotes[METAL_TICKERS[metal]]?.price ?? FALLBACK_SPOT_PRICES[metal];
@@ -52,13 +49,10 @@ function App() {
 
   const isFetching = status === 'connecting';
 
-  // Auto-detect user country on initial load using resilient fallback APIs
   useEffect(() => {
     const detectGeoLocation = async () => {
       try {
         let countryCode = '';
-
-        // 1. Try FreeIPAPI (HTTPS, fast, no auth)
         try {
           const response = await fetch('https://freeipapi.com/api/json');
           if (response.ok) {
@@ -68,8 +62,6 @@ function App() {
         } catch (e) {
           console.warn('FreeIPAPI failed, trying ipapi.co:', e);
         }
-
-        // 2. Try ipapi.co (Fallback)
         if (!countryCode) {
           try {
             const response = await fetch('https://ipapi.co/json/');
@@ -81,8 +73,6 @@ function App() {
             console.warn('ipapi.co failed, trying ipinfo.io:', e);
           }
         }
-
-        // 3. Try ipinfo.io (Secondary Fallback)
         if (!countryCode) {
           try {
             const response = await fetch('https://ipinfo.io/json');
@@ -94,7 +84,6 @@ function App() {
             console.warn('ipinfo.io failed:', e);
           }
         }
-
         if (countryCode) {
           const matched = COUNTRIES.find((c) => c.code.toUpperCase() === countryCode.toUpperCase());
           if (matched) {
@@ -109,8 +98,6 @@ function App() {
     detectGeoLocation();
   }, []);
 
-
-  // Sync global weight unit with country's default weight unit when currency changes in header
   useEffect(() => {
     const matchingCountry = COUNTRIES.find((c) => c.currency === selectedCurrency);
     if (matchingCountry && matchingCountry.defaultUnit) {
@@ -136,9 +123,20 @@ function App() {
             ? 'Stale feed'
             : `Live • ${lastUpdated?.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`;
 
+  const outletCtx: AppOutletContext = {
+    prices,
+    selectedCurrency,
+    setSelectedCurrency,
+    activeMetal,
+    setActiveMetal,
+    weightUnit,
+    setWeightUnit,
+    exchangeRates,
+    changePercents,
+  };
+
   return (
     <>
-      {/* Top Header */}
       <header className="app-header">
         <div className="logo-section">
           <div
@@ -155,8 +153,23 @@ function App() {
           </div>
         </div>
 
+        {/* Top navigation */}
+        <nav className="app-nav">
+          <NavLink to="/" end className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Home size={15} />
+            <span>Home</span>
+          </NavLink>
+          <NavLink to="/blogs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <BookOpen size={15} />
+            <span>Blogs</span>
+          </NavLink>
+          <NavLink to="/tips" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Lightbulb size={15} />
+            <span>Tips</span>
+          </NavLink>
+        </nav>
+
         <div className="header-controls">
-          {/* Status Indicator */}
           <div
             className="currency-selector-wrapper"
             onClick={reconnect}
@@ -188,10 +201,9 @@ function App() {
             </span>
           </div>
 
-          {/* Target Currency */}
           <div
             className="currency-selector-wrapper"
-            title="Select the target currency for all conversions and calculations across the dashboard. This also determines the destination country's tax profile."
+            title="Select the target currency for all conversions and calculations across the dashboard."
           >
             <label htmlFor="currency-select-main">Currency</label>
             <select
@@ -216,10 +228,9 @@ function App() {
             </select>
           </div>
 
-          {/* Weight Unit */}
           <div
             className="currency-selector-wrapper"
-            title="Select the global weight unit (Troy Ounces, Grams, Kilograms) used to scale prices in cards and analytics charts."
+            title="Select the global weight unit used to scale prices."
           >
             <label htmlFor="unit-select-main">Weight Unit</label>
             <select
@@ -239,10 +250,9 @@ function App() {
             </select>
           </div>
 
-          {/* Update Interval */}
           <div
             className="currency-selector-wrapper"
-            title="Select the live pricing data refresh frequency for streaming quotes from TradingView."
+            title="Select the live pricing data refresh frequency."
           >
             <label htmlFor="refresh-select-main">Update Rate</label>
             <select
@@ -261,41 +271,8 @@ function App() {
         </div>
       </header>
 
-      {/* Main Dashboard Layout */}
-      <main className="dashboard-grid">
-        {/* 1. Live Price Grid */}
-        <LivePriceCards
-          prices={prices}
-          selectedCurrency={selectedCurrency}
-          activeMetal={activeMetal}
-          setActiveMetal={setActiveMetal}
-          weightUnit={weightUnit}
-          exchangeRates={exchangeRates}
-          changePercents={changePercents}
-        />
+      <Outlet context={outletCtx} />
 
-        {/* 2. Global Tax Cost Localization Calculator */}
-        <Calculator
-          activeMetal={activeMetal}
-          setActiveMetal={setActiveMetal}
-          spotPrices={prices}
-          selectedCurrency={selectedCurrency}
-          weightUnit={weightUnit}
-          exchangeRates={exchangeRates}
-        />
-
-        {/* 3. Interactive Charting Overlay */}
-        <AnalyticsChart
-          activeMetal={activeMetal}
-          selectedCurrency={selectedCurrency}
-          spotPrices={prices}
-          weightUnit={weightUnit}
-          exchangeRates={exchangeRates}
-        />
-
-      </main>
-
-      {/* Bottom Footer */}
       <footer className="app-footer">
         <div>
           <span>

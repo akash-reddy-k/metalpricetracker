@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { liveQuotesUrl, type LiveQuote } from '../services/api';
 
 export type ConnectionStatus = 'connecting' | 'live' | 'reconnecting' | 'offline';
@@ -19,8 +19,8 @@ const OFFLINE_AFTER_ATTEMPTS = 3;
 /**
  * Subscribes to the server's SSE price stream.
  *
- * `throttleMs` is sent to the server as a delivery preference and changing it does
- * not tear down the connection, so adjusting the refresh rate never drops the feed.
+ * Changing `throttleMs` tears down the current connection and opens a new one with
+ * the updated delivery interval, so the server starts honoring the new rate immediately.
  */
 export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect: () => void } {
   const [quotes, setQuotes] = useState<Record<string, LiveQuote>>({});
@@ -28,13 +28,6 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [stale, setStale] = useState(false);
   const [reconnectNonce, setReconnectNonce] = useState(0);
-
-  // Held in a ref so throttle changes reach the next reconnect without
-  // re-running the effect and dropping the current stream.
-  const throttleRef = useRef(throttleMs);
-  useEffect(() => {
-    throttleRef.current = throttleMs;
-  }, [throttleMs]);
 
   useEffect(() => {
     let source: EventSource | null = null;
@@ -44,7 +37,7 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
 
     const connect = async () => {
       if (disposed) return;
-      const url = await liveQuotesUrl(throttleRef.current);
+      const url = await liveQuotesUrl(throttleMs);
       if (disposed) return; // cleanup may have run while awaiting the token
 
       source = new EventSource(url);
@@ -101,7 +94,7 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
       if (retryTimer) clearTimeout(retryTimer);
       source?.close();
     };
-  }, [reconnectNonce]);
+  }, [reconnectNonce, throttleMs]);
 
   return {
     quotes,

@@ -4,16 +4,16 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "start": "tsx entry.node.ts",
-    "dev": "tsx entry.node.ts"
+    "dev": "tsx --watch entry.node.ts",
+    "start": "tsx entry.node.ts"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.8",
-    "hono": "^4.12.29"
+    "hono": "^4.12.29",
+    "tsx": "^4.23.0"
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
-    "tsx": "^4.23.0",
     "typescript": "~6.0.2"
   }
 }

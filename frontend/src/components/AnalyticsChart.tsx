@@ -7,6 +7,7 @@ import { TrendingUp, Percent, ArrowLeftRight, Layers } from 'lucide-react';
 
 interface AnalyticsChartProps {
   activeMetal: MetalType;
+  setActiveMetal: (metal: MetalType) => void;
   selectedCurrency: CurrencyType;
   spotPrices: {
     gold: number;
@@ -19,6 +20,13 @@ interface AnalyticsChartProps {
   exchangeRates: Record<CurrencyType, number>;
 }
 
+const METAL_OPTIONS: Array<{ value: MetalType; label: string }> = [
+  { value: 'gold', label: 'Gold' },
+  { value: 'silver', label: 'Silver' },
+  { value: 'platinum', label: 'Platinum' },
+  { value: 'palladium', label: 'Palladium' },
+];
+
 const TIMEFRAMES: Array<{ label: string; value: '24h' | '7d' | '30d' | '1y' | '5y' }> = [
   { label: '24 Hours', value: '24h' },
   { label: '7 Days', value: '7d' },
@@ -29,6 +37,7 @@ const TIMEFRAMES: Array<{ label: string; value: '24h' | '7d' | '30d' | '1y' | '5
 
 export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   activeMetal,
+  setActiveMetal,
   selectedCurrency,
   spotPrices,
   weightUnit,
@@ -282,6 +291,24 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Metal selector — switches the metal charted across all series */}
+      <div className="metal-toggles">
+        {METAL_OPTIONS.map((m) => (
+          <button
+            key={m.value}
+            className={`tf-btn ${activeMetal === m.value ? 'active' : ''}`}
+            onClick={() => setActiveMetal(m.value)}
+            style={
+              activeMetal === m.value
+                ? { borderColor: metalColorMap[m.value], color: metalColorMap[m.value] }
+                : undefined
+            }
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
       {/* Comparison Controls */}

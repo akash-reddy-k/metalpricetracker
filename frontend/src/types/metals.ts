@@ -55,6 +55,18 @@ export interface HistoricalPricePoint {
   };
 }
 
+export interface AppOutletContext {
+  prices: SpotPrices;
+  selectedCurrency: CurrencyType;
+  setSelectedCurrency: (c: CurrencyType) => void;
+  activeMetal: MetalType;
+  setActiveMetal: (m: MetalType) => void;
+  weightUnit: WeightUnit;
+  setWeightUnit: (u: WeightUnit) => void;
+  exchangeRates: Record<CurrencyType, number>;
+  changePercents: Record<MetalType, number>;
+}
+
 export interface CalculationResult {
   metal: MetalType;
   weight: number;

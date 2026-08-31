@@ -250,6 +250,15 @@ export function isGoldVatExempt(countryCode: string): boolean {
   return exemptCountries.includes(countryCode);
 }
 
+// Slug helpers for URL routing (e.g. "india", "united-states")
+export function countrySlug(country: CountryTaxConfig): string {
+  return country.name.toLowerCase().replace(/\s+/g, '-');
+}
+
+export function findCountryBySlug(slug: string): CountryTaxConfig | undefined {
+  return COUNTRIES.find((c) => countrySlug(c) === slug);
+}
+
 // Helper to get metal-specific import duty, falling back to country-level import duty
 export function getMetalImportDuty(country: CountryTaxConfig, metal: MetalType): number {
   return country.metalImportDuty?.[metal] ?? country.importDuty;

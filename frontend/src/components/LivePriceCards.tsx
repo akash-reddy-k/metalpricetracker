@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
 import { getPricePerUnit } from '../services/priceEngine';
-import { COUNTRIES, getMetalImportDuty } from '../data/countries';
+import { COUNTRIES, countrySlug, getMetalImportDuty } from '../data/countries';
 import { Sparkles, Activity } from 'lucide-react';
 
 interface LivePriceCardsProps {
@@ -73,11 +74,11 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
   prices,
   selectedCurrency,
   activeMetal,
-  setActiveMetal,
   weightUnit,
   exchangeRates,
   changePercents,
 }) => {
+  const navigate = useNavigate();
   const previousPrices = useRef<SpotPrices | null>(null);
   const [pulseStates, setPulseStates] = useState<Record<MetalType, 'up' | 'down' | null>>({
     gold: null,
@@ -184,7 +185,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
               borderColor: isSelected ? details.color : 'var(--border-color)',
               boxShadow: isSelected ? `0 0 20px ${details.color}25` : 'none',
             }}
-            onClick={() => setActiveMetal(metal)}
+            onClick={() => navigate(`/${countrySlug(currentCountry)}/${metal}`)}
           >
             <div className="metal-card-header">
               <div>

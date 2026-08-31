@@ -112,6 +112,41 @@ body {
   color: var(--text-secondary);
 }
 
+/* Top navigation bar */
+.app-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-link.active {
+  color: var(--gold);
+  background: var(--bg-dark);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.15);
+}
+
 .header-controls {
   display: flex;
   align-items: center;
@@ -587,6 +622,248 @@ body {
   filter: drop-shadow(0 0 10px rgba(245, 158, 11, 0.2));
 }
 
+/* When both totals show, the excl. row is the lighter subtotal and grand is the emphasis. */
+.receipt-row.total:not(.grand):has(+ .receipt-row.total.grand) {
+  margin-bottom: 8px;
+  opacity: 0.85;
+}
+
+.receipt-row.total:not(.grand):has(+ .receipt-row.total.grand) > span {
+  font-size: 18px;
+  color: var(--text-secondary);
+  filter: none;
+}
+
+/* VAT/GST opt-in checkbox */
+.vat-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text-secondary);
+  padding: 10px 0;
+}
+
+.vat-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* Per-country purity breakdown panel */
+.purity-panel {
+  grid-column: 1 / -1;
+}
+
+.purity-vat-toggle {
+  padding: 0 0 14px;
+}
+
+.purity-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.purity-row {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.purity-row.with-vat {
+  grid-template-columns: 1.6fr 1fr 1fr;
+}
+
+.purity-row:last-child {
+  border-bottom: none;
+}
+
+.purity-row.header {
+  background: rgba(0, 0, 0, 0.2);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.purity-row.header span:not(:first-child),
+.purity-price {
+  text-align: right;
+}
+
+.purity-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.purity-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.purity-price {
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.purity-price.incl {
+  color: var(--text-secondary);
+}
+
+.purity-note {
+  margin-top: 14px;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Investment tips section */
+.tips-panel,
+.blog-panel {
+  grid-column: 1 / -1;
+}
+
+.tips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.tip-card {
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tip-tag {
+  align-self: flex-start;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid;
+}
+
+.tip-card h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.tip-card p {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Weekly reports (blog) */
+.blog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blog-item {
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.blog-item.open {
+  border-color: var(--accent);
+}
+
+.blog-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+}
+
+.blog-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.blog-date {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.blog-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.blog-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s ease;
+}
+
+.blog-chevron.rotated {
+  transform: rotate(180deg);
+}
+
+.blog-summary {
+  padding: 0 16px 16px;
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.blog-body {
+  padding: 0 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.blog-body p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+}
+
 /* Proportional cost visualizer bar */
 .proportional-cost-bar {
   margin-bottom: 20px;
@@ -683,6 +960,22 @@ body {
   background: var(--bg-dark);
   color: var(--text-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.metal-toggles {
+  display: flex;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 4px;
+  border-radius: 10px;
+  border: 1px solid var(--border-color);
+  width: fit-content;
+  margin-bottom: 16px;
+}
+
+.metal-toggles .tf-btn.active {
+  background: var(--bg-dark);
+  border: 1px solid currentColor;
 }
 
 .comparison-bar {
@@ -1204,6 +1497,11 @@ body {
 
   .app-title-block p {
     margin-top: 4px;
+  }
+
+  .app-nav {
+    width: 100%;
+    justify-content: center;
   }
 
   .header-controls {

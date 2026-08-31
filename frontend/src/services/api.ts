@@ -60,11 +60,39 @@ export interface HistoryBar {
   c: number;
 }
 
-export function liveQuotesUrl(throttleMs: number): string {
-  const params = new URLSearchParams({
-    s: SUBSCRIBED_TICKERS.join(','),
-    i: String(throttleMs),
-  });
+// ── Short-lived token ─────────────────────────────────────────────────────────
+
+interface TokenState {
+  token: string | null;
+  expiresAt: number;
+}
+
+const tokenState: TokenState = { token: null, expiresAt: 0 };
+
+async function getToken(): Promise<string | null> {
+  if (tokenState.token && Date.now() < tokenState.expiresAt - 30_000) return tokenState.token;
+  try {
+    const res = await fetch(`${API_BASE}/token`);
+    if (!res.ok) return null;
+    const data = (await res.json()) as { token: string | null; expiresIn: number | null };
+    if (!data.token) return null;
+    tokenState.token = data.token;
+    tokenState.expiresAt = Date.now() + (data.expiresIn ?? 60_000);
+    return data.token;
+  } catch {
+    return null;
+  }
+}
+
+export async function authHeaders(): Promise<Record<string, string>> {
+  const token = await getToken();
+  return token ? { 'X-Token': token } : {};
+}
+
+export async function liveQuotesUrl(throttleMs: number): Promise<string> {
+  const token = await getToken();
+  const params = new URLSearchParams({ i: String(throttleMs) });
+  if (token) params.set('token', token);
   return `${API_BASE}/live-quotes?${params}`;
 }
 
@@ -74,7 +102,10 @@ export async function fetchHistory(
   signal?: AbortSignal
 ): Promise<HistoryBar[]> {
   const params = new URLSearchParams({ symbol: METAL_TICKERS[metal], range });
-  const response = await fetch(`${API_BASE}/history?${params}`, { signal });
+  const response = await fetch(`${API_BASE}/history?${params}`, {
+    signal,
+    headers: await authHeaders(),
+  });
 
   if (!response.ok) {
     const body = await response.json().catch(() => ({}));
@@ -117,7 +148,10 @@ export interface IndiaRatesResponse {
 }
 
 export async function fetchIndiaRates(signal?: AbortSignal): Promise<IndiaRatesResponse> {
-  const response = await fetch(`${API_BASE}/india-rates`, { signal });
+  const response = await fetch(`${API_BASE}/india-rates`, {
+    signal,
+    headers: await authHeaders(),
+  });
   if (!response.ok) throw new Error(`india-rates failed (${response.status})`);
   return (await response.json()) as IndiaRatesResponse;
 }

@@ -82,10 +82,13 @@ VITE_HONO_SERVER_URL=http://localhost:3000
 
 ## Production Deployment
 
-| | Platform | Auto-deploy |
+| | Platform | Deploys when |
 |---|---|---|
-| **Frontend** | Cloudflare Pages | On release via GitHub Actions |
-| **Backend** | Render | On push to `main` |
+| **Frontend** | Cloudflare Pages | GitHub release published |
+| **Backend** | Render | GitHub release published |
+
+Both deploy from the same release tag via a single workflow (`.github/workflows/deploy.yml`).
+Render auto-deploy must be **disabled** — deploys only via the release workflow.
 
 **Backend** (Render settings):
 - Root directory: `backend`
@@ -96,6 +99,15 @@ VITE_HONO_SERVER_URL=http://localhost:3000
 - Root directory: `frontend`
 - Build command: `npm ci && npm run build`
 - Build output: `dist`
+
+### Required GitHub secrets (repo → Settings → Secrets → Actions)
+
+| Secret | Description |
+|---|---|
+| `CLOUDFLARE_API_TOKEN` | CF API token with Pages:Edit permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
+| `VITE_HONO_SERVER_URL` | Backend URL e.g. `https://api.metalprices.online` |
+| `RENDER_DEPLOY_HOOK` | Render deploy hook URL (Settings → Deploy Hook) |
 
 ### Required environment variables
 

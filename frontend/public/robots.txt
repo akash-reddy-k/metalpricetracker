@@ -4,4 +4,4 @@ Allow: /
 Sitemap: https://metalprices.online/sitemap.xml
 
 # LLM discovery — see https://llmstxt.org
-Text for LLMs: https://metalprices.online/llms.txt
+LLMs-Txt: https://metalprices.online/llms.txt

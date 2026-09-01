@@ -35,7 +35,7 @@ const TIMEFRAMES: Array<{ label: string; value: '24h' | '7d' | '30d' | '1y' | '5
   { label: '5 Years', value: '5y' },
 ];
 
-export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
+const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
   activeMetal,
   setActiveMetal,
   selectedCurrency,
@@ -706,3 +706,5 @@ export const AnalyticsChart: React.FC<AnalyticsChartProps> = ({
     </div>
   );
 };
+
+export default AnalyticsChart;

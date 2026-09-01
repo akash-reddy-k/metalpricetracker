@@ -49,6 +49,7 @@ function App() {
 
   const isFetching = status === 'connecting';
 
+  // Defer geo-detection so it doesn't compete with initial render / LCP
   useEffect(() => {
     const detectGeoLocation = async () => {
       try {
@@ -95,7 +96,12 @@ function App() {
         console.warn('Failed to auto-detect country location, falling back to USD default:', err);
       }
     };
-    detectGeoLocation();
+    // Wait for first paint before hitting geo APIs
+    if ('requestIdleCallback' in window) {
+      (window as any).requestIdleCallback(() => detectGeoLocation(), { timeout: 4000 });
+    } else {
+      setTimeout(detectGeoLocation, 2000);
+    }
   }, []);
 
   useEffect(() => {

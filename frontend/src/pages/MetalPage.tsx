@@ -7,7 +7,7 @@ import { Calculator } from '../components/Calculator';
 
 const VALID_METALS: MetalType[] = ['gold', 'silver', 'platinum', 'palladium'];
 
-export const MetalPage: React.FC = () => {
+const MetalPage: React.FC = () => {
   const { country: countrySlug, metal: metalParam } = useParams<{
     country: string;
     metal: string;
@@ -52,3 +52,5 @@ export const MetalPage: React.FC = () => {
     </main>
   );
 };
+
+export default MetalPage;

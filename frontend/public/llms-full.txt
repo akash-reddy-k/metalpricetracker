@@ -1,0 +1,100 @@
+# MetalPrices.online — Full Reference
+
+> Live precious metals spot price tracker with country-specific import duty, GST, and VAT calculator for Gold, Silver, Platinum, and Palladium across 13 countries. Prices update every 60 seconds from international commodity exchanges via TradingView market feeds.
+
+## Metals Tracked
+
+- **Gold (XAU)**: Safe haven asset. Purities: 24K (99.9%), 22K (91.6%), 18K (75.0%), 14K (58.3%), 10K (41.7%)
+- **Silver (XAG)**: Industrial and monetary metal. Purities: Fine Silver (99.9%), Sterling (92.5%), Coin Silver (90.0%)
+- **Platinum (XPT)**: Automotive catalysts and jewelry
+- **Palladium (XPD)**: Electronics and autocatalysts
+
+## Currencies Supported
+
+USD, INR, EUR, GBP, AED, JPY, CAD, AUD, CHF, CNY, RUB, IDR, ZAR
+
+## Weight Units
+
+Troy ounce (oz), gram (g), kilogram (kg), tola (10g), tael (37.5g), baht (15.244g), mesghal (4.6083g), pennyweight (dwt)
+
+## Countries and Tax Rates
+
+| Country | Currency | Import Duty (Gold) | VAT/GST (Gold) | Notes |
+|---------|----------|-------------------|-----------------|-------|
+| India | INR | 15% | 3% | Highest combined precious metals tax. Jewelry has additional 5% GST on making charges |
+| United Arab Emirates | AED | 5% | 5% | Dubai Gold Souk is one of the world's largest retail gold markets |
+| United States | USD | 0% | ~6% (varies by state) | Many states exempt investment-grade bullion from sales tax |
+| United Kingdom | GBP | 0% | 20% | Investment gold coins and bars meeting HMRC criteria are VAT-exempt |
+| Germany | EUR | 0% | 19% | EU investment gold of 99.5%+ purity is VAT-exempt |
+| Canada | CAD | 0% | 0% | Investment-grade precious metals are GST/HST exempt |
+| Australia | AUD | 0% | 0% | Investment-grade precious metals are GST exempt |
+| Japan | JPY | 0% | 10% | TOCOM is the main price reference |
+| Switzerland | CHF | 0% | 8.1% | Home to PAMP and Valcambi refineries |
+| China | CNY | 0% | 13% | Shanghai Gold Exchange is the world's largest physical gold exchange |
+| Russia | RUB | 0% | 20% | World's largest palladium producer |
+| Indonesia | IDR | 7.5% | 11% | Antam is the state-owned gold producer |
+| South Africa | ZAR | 0% | 15% | World's largest producer of platinum-group metals |
+
+## Price Calculation Method
+
+1. International spot price in USD per troy ounce is sourced from TradingView feeds
+2. Converted to local currency using live exchange rates
+3. Scaled to the selected weight unit (e.g., per gram = spot / 31.1035)
+4. Import duty applied as percentage of the converted spot price
+5. VAT/GST applied on (spot + import duty) base
+6. Final price = spot + import duty + VAT/GST
+
+## Calculator Features
+
+- Weight-based pricing for any quantity
+- Product format selection: Bullion (coins/bars) vs. Jewelry
+- Purity/fineness selection per metal
+- Optional VAT/GST inclusion toggle
+- Mint fee / markup override
+- Premium override percentage
+- Country tax profile auto-detection via IP geolocation
+
+## API Endpoint
+
+- Base URL: https://api.metalprices.online
+- Authentication: Token-based (fetch /token first, pass as X-Token header)
+- Snapshot endpoint: /snapshot (returns current quotes for all metals and FX rates)
+
+## URL Structure
+
+- Home: /
+- Metal by country: /{country-slug}/{metal}
+  - Example: /india/gold, /united-states/silver, /united-arab-emirates/platinum
+- Country overview: /{country-slug}/
+  - Example: /india/, /united-kingdom/
+- Blogs: /blogs
+- Tips: /tips
+
+## Country Slugs
+
+india, united-arab-emirates, united-states, united-kingdom, germany, canada, australia, japan, switzerland, china, russia, indonesia, south-africa
+
+## Frequently Asked Questions
+
+**What is the gold price today?**
+The live gold spot price updates every 60 seconds on MetalPrices.online, sourced from international commodity exchanges. The homepage shows the current price in USD, INR, EUR, and 10+ other currencies.
+
+**What is the GST on gold in India?**
+GST on gold in India is 3% on the gold value and 5% on making charges for jewelry. For gold bars and coins, GST is 3%.
+
+**What is the import duty on gold in India?**
+The basic customs duty on gold imported into India is 15%.
+
+**How is the live gold price calculated in INR?**
+The international spot price (USD per troy ounce) is converted to INR using the live USD/INR exchange rate, then scaled to per-gram or per-tola. Import duty of 15% is added to get the duty-paid price.
+
+**What is the difference between 24K and 22K gold price?**
+24K gold is 99.9% pure and commands the highest price. 22K gold is 91.6% pure, so its price is roughly 91.6% of 24K gold for the same weight.
+
+## Technical Details
+
+- Frontend: React 19 + TypeScript + Vite
+- Hosting: Cloudflare Pages
+- Data source: TradingView market feeds via custom API proxy
+- Update frequency: Configurable 30s to 30min (default 60s)
+- SEO: Static pre-rendered pages for all country/metal combinations with structured data (JSON-LD)

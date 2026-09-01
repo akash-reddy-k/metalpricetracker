@@ -2,3 +2,6 @@ User-agent: *
 Allow: /
 
 Sitemap: https://metalprices.online/sitemap.xml
+
+# LLM discovery — see https://llmstxt.org
+LLMs-Txt: https://metalprices.online/llms.txt

@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../types/metals';
 import { LivePriceCards } from '../components/LivePriceCards';
 import { Calculator } from '../components/Calculator';
-import { AnalyticsChart } from '../components/AnalyticsChart';
+
+// AnalyticsChart is the heaviest component (708 lines, charts, history hooks).
+// Lazy-load it so the above-the-fold price cards + calculator paint first.
+const AnalyticsChart = lazy(() => import('../components/AnalyticsChart'));
 
 export const HomePage: React.FC = () => {
   const ctx = useOutletContext<AppOutletContext>();
@@ -29,14 +32,20 @@ export const HomePage: React.FC = () => {
         exchangeRates={ctx.exchangeRates}
       />
 
-      <AnalyticsChart
-        activeMetal={ctx.activeMetal}
-        setActiveMetal={ctx.setActiveMetal}
-        selectedCurrency={ctx.selectedCurrency}
-        spotPrices={ctx.prices}
-        weightUnit={ctx.weightUnit}
-        exchangeRates={ctx.exchangeRates}
-      />
+      <Suspense fallback={
+        <div style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+          Loading analytics...
+        </div>
+      }>
+        <AnalyticsChart
+          activeMetal={ctx.activeMetal}
+          setActiveMetal={ctx.setActiveMetal}
+          selectedCurrency={ctx.selectedCurrency}
+          spotPrices={ctx.prices}
+          weightUnit={ctx.weightUnit}
+          exchangeRates={ctx.exchangeRates}
+        />
+      </Suspense>
     </main>
   );
 };

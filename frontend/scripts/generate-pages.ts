@@ -16,23 +16,8 @@ const BUILD_DATE = new Date().toISOString().slice(0, 10);
 
 const SPOT = { gold: 4603.0, silver: 68.94, platinum: 1877.0, palladium: 1344.0 };
 const TROY_OZ_PER_GRAM = 1 / 31.1034768;
-const API_BASE = 'https://api.metalprices.online';
-
 type Metal = 'gold' | 'silver' | 'platinum' | 'palladium';
 const METALS: Metal[] = ['gold', 'silver', 'platinum', 'palladium'];
-
-/** TradingView ticker for each metal — used by the live-update script. */
-const METAL_TV_TICKER: Record<Metal, string> = {
-  gold: 'TVC:GOLD', silver: 'TVC:SILVER', platinum: 'TVC:PLATINUM', palladium: 'TVC:PALLADIUM',
-};
-
-/** TradingView FX ticker for each currency — empty string means USD (rate = 1). */
-const FX_TV_TICKER: Record<string, string> = {
-  USD: '', INR: 'FX_IDC:USDINR', EUR: 'FX_IDC:USDEUR', GBP: 'FX_IDC:USDGBP',
-  JPY: 'FX_IDC:USDJPY', CAD: 'FX_IDC:USDCAD', AUD: 'FX_IDC:USDAUD',
-  AED: 'FX_IDC:USDAED', CHF: 'FX_IDC:USDCHF', CNY: 'FX_IDC:USDCNY',
-  RUB: 'FX_IDC:USDRUB', IDR: 'FX_IDC:USDIDR', ZAR: 'FX_IDC:USDZAR',
-};
 
 const METAL_LABEL: Record<Metal, string> = {
   gold: 'Gold', silver: 'Silver', platinum: 'Platinum', palladium: 'Palladium',
@@ -72,7 +57,7 @@ const COUNTRIES: Country[] = [
     taxNote: 'India charges 15% basic customs duty plus 3% GST on gold and silver. Platinum and palladium attract 15.4% duty and 18% GST — among the highest precious-metals tax rates in the world.',
   },
   {
-    code: 'AE', slug: 'uae', name: 'United Arab Emirates', currency: 'AED', symbol: 'د.إ', flag: '🇦🇪',
+    code: 'AE', slug: 'united-arab-emirates', name: 'United Arab Emirates', currency: 'AED', symbol: 'د.إ', flag: '🇦🇪',
     rate: 3.67, displayUnit: 'g', displayUnitLabel: 'gram', unitMultiplier: TROY_OZ_PER_GRAM,
     taxes: {
       gold:      { importDuty: 5, vatGst: 5 },
@@ -396,10 +381,33 @@ ${jsonLd.map(ld => `<script type="application/ld+json">${JSON.stringify(ld, null
 }
 
 function siteHeader(): string {
-  return `<div style="background:#0a0a0f;border-bottom:1px solid #1e293b;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
-  <a href="${DOMAIN}" style="color:#e2e8f0;font-weight:700;font-size:16px;">MetalPrices.Online</a>
-  <a href="${DOMAIN}" class="cta-btn" style="padding:8px 18px;font-size:13px;">Live Prices →</a>
+  return `<div style="background:#0a0a0f;border-bottom:1px solid #1e293b;padding:14px 20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+  <a href="${DOMAIN}" style="color:#e2e8f0;font-weight:700;font-size:16px;text-decoration:none;">MetalPrices.Online</a>
+  <nav style="display:flex;gap:6px;align-items:center;">
+    <a href="${DOMAIN}/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">Home</a>
+    <a href="${DOMAIN}/blogs" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Blogs</a>
+    <a href="${DOMAIN}/tips" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Tips</a>
+  </nav>
 </div>`;
+}
+
+function crossLinks(currentCountry?: Country, currentMetal?: Metal): string {
+  const links: string[] = [];
+  // Link to a few other popular country+metal combos
+  const popularSlugs = ['india', 'united-states', 'united-arab-emirates', 'united-kingdom', 'germany'];
+  for (const slug of popularSlugs) {
+    const c = COUNTRIES.find(co => co.slug === slug);
+    if (!c || (c.slug === currentCountry?.slug && !currentMetal)) continue;
+    for (const m of METALS) {
+      if (c.slug === currentCountry?.slug && m === currentMetal) continue;
+      links.push(`<a href="${DOMAIN}/${c.slug}/${m}/" style="color:#60a5fa;text-decoration:none;font-size:12px;">${c.flag} ${METAL_LABEL[m]} in ${c.name}</a>`);
+    }
+  }
+  if (links.length === 0) return '';
+  return `<div style="margin-top:28px;padding-top:20px;border-top:1px solid #1e293b;">
+    <h3 style="font-size:14px;color:#94a3b8;margin-bottom:10px;">Explore More Prices</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:8px 16px;">${links.slice(0, 16).join('')}</div>
+  </div>`;
 }
 
 function foot(): string {
@@ -409,13 +417,12 @@ function foot(): string {
 </footer>`;
 }
 
-// ── Metal+Country page ────────────────────────────────────────────────────────
+// ── Metal+Country page (SPA shell) ───────────────────────────────────────────
 
 function buildMetalPage(country: Country, metal: Metal): string {
   const p = calcPrice(country, metal);
   const metalLabel = METAL_LABEL[metal];
   const metalSym = METAL_SYMBOL[metal];
-  const metalColor = METAL_COLOR[metal];
   const unitLabel = country.displayUnitLabel;
   const sym = country.symbol;
 
@@ -442,140 +449,87 @@ function buildMetalPage(country: Country, metal: Metal): string {
     provider: { '@type': 'Organization', name: 'MetalPrices.Online', url: DOMAIN },
   };
 
-  // Same country, other metals
-  const metalPills = METALS.map(m =>
-    `<a href="${DOMAIN}/${country.slug}/${m}" class="pill${m === metal ? ' active' : ''}" style="${m === metal ? `--metal-color:${metalColor}` : ''}">${METAL_LABEL[m]}</a>`
-  ).join('');
+  const jsonLdBlock = [breadcrumbLd, financialLd]
+    .map(ld => `<script type="application/ld+json">${JSON.stringify(ld, null, 2)}</script>`)
+    .join('\n');
 
-  // Same metal, other countries (show 6)
-  const countryPills = COUNTRIES
-    .filter(c => c.slug !== country.slug)
-    .slice(0, 9)
+  // Build route-specific noscript content for SEO crawlers
+  const otherMetals = METALS.filter(m => m !== metal)
+    .map(m => `<li><a href="/${country.slug}/${m}">${METAL_LABEL[m]} Price in ${country.name}</a></li>`)
+    .join('\n          ');
+  const otherCountries = COUNTRIES.filter(c => c.slug !== country.slug).slice(0, 6)
     .map(c => {
       const cp = calcPrice(c, metal);
-      return `<a href="${DOMAIN}/${c.slug}/${metal}" class="pill">${c.flag} ${c.name} — ${c.symbol}${fmt(cp.totalPerUnit, c.currency)}/${c.displayUnitLabel}</a>`;
-    }).join('');
-
-  return `${head(title, description, canonicalPath, [breadcrumbLd, financialLd])}
-${siteHeader()}
-<div class="wrapper">
-  <nav class="breadcrumb" aria-label="breadcrumb">
-    <a href="${DOMAIN}">Home</a><span>›</span>
-    <a href="${DOMAIN}/${country.slug}">${country.flag} ${country.name}</a><span>›</span>
-    <span>${metalLabel}</span>
-  </nav>
-
-  <header class="page-header">
-    <h1 style="color:${metalColor}">${metalLabel} Price in ${country.name} Today</h1>
-    <p class="subtitle">${metalSym} · Prices as of ${BUILD_DATE} · Duty &amp; tax inclusive</p>
-  </header>
-
-  <div class="price-highlight"
-    data-metal-ticker="${METAL_TV_TICKER[metal]}"
-    data-fx-ticker="${FX_TV_TICKER[country.currency] ?? ''}"
-    data-duty-pct="${p.importDutyPct}"
-    data-vat-pct="${p.vatGstPct}"
-    data-unit-multiplier="${country.unitMultiplier}"
-    data-symbol="${sym}"
-    data-currency="${country.currency}"
-    data-unit-label="${unitLabel}">
-    <div class="label">Duty-paid price per ${unitLabel}</div>
-    <div class="amount" style="color:${metalColor}">${sym}${fmt(p.totalPerUnit, country.currency)}<span class="per">/ ${unitLabel}</span></div>
-    <div class="spot-note">International spot: $${fmt(p.spotUSD, 'USD')}/oz — converted at ${sym}1 = $${(1 / country.rate).toFixed(4)}</div>
-  </div>
-
-  <div class="breakdown">
-    <h2>Price Breakdown</h2>
-    <table>
-      <tr><td>Spot price (USD/oz)</td><td id="live-spot-usd">$${fmt(p.spotUSD, 'USD')}</td></tr>
-      <tr><td>Spot in ${country.currency} (per ${unitLabel})</td><td id="live-spot-local">${sym}${fmt(p.spotPerUnit, country.currency)}</td></tr>
-      ${p.importDutyPct > 0 ? `<tr><td>Import duty (${p.importDutyPct}%)</td><td id="live-duty-amt">+ ${sym}${fmt(p.importDutyAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">Import duty</td><td style="color:#475569">None</td></tr>'}
-      ${p.vatGstPct > 0 ? `<tr><td>VAT / GST (${p.vatGstPct}%)</td><td id="live-vat-amt">+ ${sym}${fmt(p.vatAmt, country.currency)}</td></tr>` : '<tr><td style="color:#475569">VAT / GST</td><td style="color:#475569">None (exempt)</td></tr>'}
-      <tr class="total"><td>Total duty-paid price / ${unitLabel}</td><td id="live-total-row">${sym}${fmt(p.totalPerUnit, country.currency)}</td></tr>
-    </table>
-  </div>
-
-  <div class="tax-note">ℹ️ ${country.taxNote}</div>
-
-  <div class="cta-box">
-    <h2>Need live prices?</h2>
-    <p>These prices are from our last build. The main app streams live quotes from TradingView, auto-detects your country, and calculates real-time duty-inclusive prices.</p>
-    <a href="${DOMAIN}" class="cta-btn">Open Live Calculator →</a>
-  </div>
-
-  <div class="nav-section">
-    <h2>Other metals in ${country.name}</h2>
-    <div class="nav-pills">${metalPills}</div>
-  </div>
-
-  <div class="nav-section">
-    <h2>${metalLabel} prices in other countries</h2>
-    <div class="nav-pills">${countryPills}</div>
-  </div>
-
-  ${foot()}
-</div>
-<script>
-(function () {
-  var h = document.querySelector('.price-highlight');
-  if (!h) return;
-  var metalTicker  = h.dataset.metalTicker;
-  var fxTicker     = h.dataset.fxTicker;
-  var dutyPct      = parseFloat(h.dataset.dutyPct);
-  var vatPct       = parseFloat(h.dataset.vatPct);
-  var multiplier   = parseFloat(h.dataset.unitMultiplier);
-  var sym          = h.dataset.symbol;
-  var currency     = h.dataset.currency;
-  var unitLabel    = h.dataset.unitLabel;
-  var noDecimals   = ['JPY','IDR','RUB'].includes(currency);
-
-  function fmt(n) {
-    return n.toLocaleString('en-US', {
-      minimumFractionDigits: noDecimals ? 0 : 2,
-      maximumFractionDigits: noDecimals ? 0 : 2
-    });
-  }
-  function upd(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
-
-  fetch('${API_BASE}/token')
-    .then(function(r) { return r.json(); })
-    .then(function(t) {
-      var opts = t && t.token ? { headers: { 'X-Token': t.token } } : {};
-      return fetch('${API_BASE}/snapshot', opts);
+      return `<li><a href="/${c.slug}/${metal}">${c.flag} ${metalLabel} in ${c.name} — ${c.symbol}${fmt(cp.totalPerUnit, c.currency)}/${c.displayUnitLabel}</a></li>`;
     })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var q = data.quotes || {};
-      var metal = q[metalTicker];
-      if (!metal || !metal.price) return;
+    .join('\n          ');
 
-      var spotUSD     = metal.price;
-      var fxRate      = fxTicker ? ((q[fxTicker] && q[fxTicker].price) || 1) : 1;
-      var spotPerUnit = spotUSD * fxRate * multiplier;
-      var dutyAmt     = spotPerUnit * (dutyPct / 100);
-      var vatAmt      = (spotPerUnit + dutyAmt) * (vatPct / 100);
-      var total       = spotPerUnit + dutyAmt + vatAmt;
-      var usd2dp      = { minimumFractionDigits: 2, maximumFractionDigits: 2 };
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
+        <h1>${metalLabel} Price in ${country.name} Today</h1>
+        <p>
+          ${country.flag} Live ${metalLabel.toLowerCase()} (${metalSym}) spot price in ${country.currency}
+          with import duty and tax breakdown for ${country.name}.
+        </p>
 
-      var amountEl = h.querySelector('.amount');
-      if (amountEl) amountEl.innerHTML = sym + fmt(total) + '<span class="per"> / ' + unitLabel + '</span>';
+        <h2>${metalLabel} Price Breakdown (${country.currency})</h2>
+        <ul>
+          <li>International Spot Price: $${fmt(p.spotUSD, 'USD')} per troy ounce</li>
+          <li>Spot in ${country.currency}: ${sym}${fmt(p.spotPerUnit, country.currency)} per ${unitLabel}</li>
+          <li>Import Duty (${p.importDutyPct}%): +${sym}${fmt(p.importDutyAmt, country.currency)}</li>
+          <li>VAT/GST (${p.vatGstPct}%): +${sym}${fmt(p.vatAmt, country.currency)}</li>
+          <li><strong>Total Duty-Paid Price: ${sym}${fmt(p.totalPerUnit, country.currency)} per ${unitLabel}</strong></li>
+        </ul>
 
-      var noteEl = h.querySelector('.spot-note');
-      if (noteEl) noteEl.textContent = 'Live spot: $' + spotUSD.toLocaleString('en-US', usd2dp) + '/oz — converted at ' + sym + '1 = $' + (1/fxRate).toFixed(4);
+        <p>${country.taxNote}</p>
 
-      var sub = document.querySelector('.subtitle');
-      if (sub) sub.textContent = sub.textContent.replace(/Prices as of [\d-]+/, 'Live as of ' + new Date().toLocaleTimeString());
+        <h2>Other Metals in ${country.name}</h2>
+        <ul>
+          ${otherMetals}
+        </ul>
 
-      upd('live-spot-usd',   '$'  + spotUSD.toLocaleString('en-US', usd2dp));
-      upd('live-spot-local', sym  + fmt(spotPerUnit));
-      upd('live-duty-amt',   dutyPct > 0 ? '+ ' + sym + fmt(dutyAmt) : '');
-      upd('live-vat-amt',    vatPct  > 0 ? '+ ' + sym + fmt(vatAmt)  : '');
-      upd('live-total-row',  sym + fmt(total));
-    })
-    .catch(function() { /* keep static prices on error */ });
-})();
-</script>
-</body></html>`;
+        <h2>${metalLabel} Price in Other Countries</h2>
+        <ul>
+          ${otherCountries}
+        </ul>
+
+        <p><a href="/">Back to MetalPrices.online — Live Precious Metal Prices</a></p>
+        <p><strong>Note:</strong> Please enable JavaScript for the full live price experience with real-time updates.</p>
+      </div>`;
+
+  // Clone the SPA template and customise SEO tags for this route
+  let html = SPA_TEMPLATE;
+
+  // <title>
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
+
+  // meta name="title"
+  html = html.replace(/<meta name="title"[^>]*>/, `<meta name="title" content="${escapeHtml(title)}" />`);
+
+  // meta name="description" (may span multiple lines in the source HTML)
+  html = html.replace(/<meta\s+name="description"[\s\S]*?>/, `<meta name="description" content="${escapeHtml(description)}" />`);
+
+  // canonical URL
+  html = html.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${DOMAIN}${canonicalPath}" />`);
+
+  // Open Graph
+  html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="og:description"[\s\S]*?>/, `<meta property="og:description" content="${escapeHtml(description)}" />`);
+
+  // Twitter Card
+  html = html.replace(/<meta property="twitter:url"[^>]*>/, `<meta property="twitter:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="twitter:title"[^>]*>/, `<meta property="twitter:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="twitter:description"[\s\S]*?>/, `<meta property="twitter:description" content="${escapeHtml(description)}" />`);
+
+  // Remove all existing JSON-LD, inject route-specific blocks before </head>
+  html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  html = html.replace('</head>', `${jsonLdBlock}\n</head>`);
+
+  // Replace noscript with route-specific SEO content
+  html = html.replace(/<noscript>[\s\S]*?<\/noscript>/, `<noscript>${noscriptContent}\n    </noscript>`);
+
+  return html;
 }
 
 // ── Country overview page ─────────────────────────────────────────────────────
@@ -669,6 +623,7 @@ ${siteHeader()}
     <div class="nav-pills">${countryLinks}</div>
   </div>
 
+  ${crossLinks(country)}
   ${foot()}
 </div>
 </body></html>`;
@@ -696,10 +651,23 @@ function write(filePath: string, content: string) {
   fs.writeFileSync(filePath, content, 'utf8');
 }
 
+// ── SPA shell template ───────────────────────────────────────────────────────
+// Metal+country pages are served as the built SPA with route-specific SEO tags.
+// Cloudflare serves these static files, the SPA boots, and React Router renders
+// the correct MetalPage component — identical experience to client-side nav.
+
+const SPA_TEMPLATE = fs.readFileSync(path.join(DIST, 'index.html'), 'utf8');
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const sitemapUrls: Array<{ loc: string; priority: string; changefreq: string }> = [
   { loc: DOMAIN + '/', priority: '1.0', changefreq: 'always' },
+  { loc: DOMAIN + '/blogs/', priority: '0.7', changefreq: 'weekly' },
+  { loc: DOMAIN + '/tips/', priority: '0.6', changefreq: 'monthly' },
 ];
 
 let pageCount = 0;

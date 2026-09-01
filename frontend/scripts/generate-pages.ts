@@ -428,7 +428,7 @@ function buildMetalPage(country: Country, metal: Metal): string {
 
   const title = `${metalLabel} Price in ${country.name} Today | ${sym}${fmt(p.totalPerUnit, country.currency)}/${unitLabel} | MetalPrices.Online`;
   const description = `${country.flag} Live ${metalLabel.toLowerCase()} price in ${country.name}: ${sym}${fmt(p.spotPerUnit, country.currency)}/${unitLabel} spot + ${p.importDutyPct}% duty + ${p.vatGstPct}% VAT = ${sym}${fmt(p.totalPerUnit, country.currency)}/${unitLabel} total. Free tax calculator.`;
-  const canonicalPath = `/${country.slug}/${metal}`;
+  const canonicalPath = `/${country.slug}/${metal}/`;
 
   const breadcrumbLd = {
     '@context': 'https://schema.org',
@@ -526,8 +526,10 @@ function buildMetalPage(country: Country, metal: Metal): string {
   html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
   html = html.replace('</head>', `${jsonLdBlock}\n</head>`);
 
-  // Replace noscript with route-specific SEO content
-  html = html.replace(/<noscript>[\s\S]*?<\/noscript>/, `<noscript>${noscriptContent}\n    </noscript>`);
+  // Replace static HTML inside <div id="root"> with route-specific SEO content.
+  // React's createRoot().render() will replace this when the SPA mounts,
+  // but Googlebot sees real content on its first (HTML-only) crawl pass.
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root">${noscriptContent}\n    </div>`);
 
   return html;
 }
@@ -535,7 +537,7 @@ function buildMetalPage(country: Country, metal: Metal): string {
 // ── Country overview page ─────────────────────────────────────────────────────
 
 function buildCountryPage(country: Country): string {
-  const canonicalPath = `/${country.slug}`;
+  const canonicalPath = `/${country.slug}/`;
   const allPrices = METALS.map(m => ({ metal: m, p: calcPrice(country, m) }));
 
   const title = `Precious Metal Prices in ${country.name} Today | MetalPrices.Online`;

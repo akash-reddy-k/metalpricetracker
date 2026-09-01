@@ -1,14 +1,7 @@
-Implement Caching so that even if yfinance lib breaks, the data can still be retrieved from the cache.
-
 Implment Tax Configurability (import duty and VAT) at metal level per country, so that the tax can be calculated correctly for each metal based on the country of import.
 
 Add sections for investment and jewellery.
 
 Add slots for ads so that the platform can generate revenue.
-
-Add SEO and google tag for analytics.
-
-Optimise website for mobile devices to improve user experience and accessibility.
-make it mobile first.
 
 

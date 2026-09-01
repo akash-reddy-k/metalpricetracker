@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit, AppOutletContext } from './types/metals';
 import { FALLBACK_SPOT_PRICES } from './services/priceEngine';
 import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
@@ -9,6 +9,7 @@ import { Coins, ShieldCheck, Home, BookOpen, Lightbulb } from 'lucide-react';
 import './index.css';
 
 function App() {
+  const navigate = useNavigate();
   const [selectedCurrency, setSelectedCurrency] = useState<CurrencyType>('USD');
   const [activeMetal, setActiveMetal] = useState<MetalType>('gold');
   const [refreshInterval, setRefreshInterval] = useState<number>(60);
@@ -144,12 +145,9 @@ function App() {
   return (
     <>
       <header className="app-header">
-        <div className="logo-section">
+        <div className="logo-section" onClick={() => navigate('/')} style={{ cursor: 'pointer' }} title="Go to homepage">
           <div
             className="logo-symbol"
-            onClick={reconnect}
-            style={{ cursor: 'pointer' }}
-            title="Click to reconnect/re-sync"
           >
             <Coins size={22} className={isFetching ? 'spinning-sparkle' : ''} />
           </div>

@@ -185,7 +185,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
               borderColor: isSelected ? details.color : 'var(--border-color)',
               boxShadow: isSelected ? `0 0 20px ${details.color}25` : 'none',
             }}
-            onClick={() => navigate(`/${countrySlug(currentCountry)}/${metal}`)}
+            onClick={() => navigate(`/${countrySlug(currentCountry)}/${metal}/`)}
           >
             <div className="metal-card-header">
               <div>

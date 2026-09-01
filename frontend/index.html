@@ -170,111 +170,115 @@
   </head>
   <body>
 
-    <!-- Noscript: Googlebot crawls this HTML even without JS rendering -->
-    <noscript>
-      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
+    <noscript><p style="text-align:center;padding:20px;color:#94a3b8;">Please enable JavaScript for live prices and the interactive calculator.</p></noscript>
 
-        <h1>Gold Price Today — Live Gold, Silver, Platinum & Palladium Spot Rates</h1>
-        <p>
+    <!-- Static HTML inside #root is visible to Googlebot on first crawl pass,
+         then replaced by React when the SPA mounts. This ensures the homepage
+         is indexable even before JS rendering. -->
+    <div id="root">
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 960px; margin: 0 auto; padding: 24px 20px; color: #e2e8f0; background: #09090f;">
+
+        <h1 style="font-size: 28px; margin-bottom: 12px;">Gold Price Today — Live Gold, Silver, Platinum &amp; Palladium Spot Rates</h1>
+        <p style="color: #94a3b8; margin-bottom: 24px;">
           <strong>MetalPrices.online</strong> tracks real-time precious metals spot prices
           from international commodity exchanges. Prices update every 60 seconds in
           <strong>13 currencies</strong> including USD, INR, EUR, GBP, AED, JPY, and more.
         </p>
 
-        <h2>Live Gold Price Today</h2>
-        <p>
+        <h2 style="font-size: 20px; color: #F59E0B; margin: 20px 0 8px;">Live Gold Price Today</h2>
+        <p style="color: #94a3b8;">
           See the current gold price per gram, per ounce, and per kilogram.
           Our gold rate includes live exchange-rate conversion and
           import-duty adjustment for your country.
         </p>
 
-        <h2>Live Silver Price Today</h2>
-        <p>
+        <h2 style="font-size: 20px; color: #9CA3AF; margin: 20px 0 8px;">Live Silver Price Today</h2>
+        <p style="color: #94a3b8;">
           Track the silver spot price in real time. Silver price per gram, per ounce,
           and per kilogram — with Fine Silver (99.9%), Sterling (92.5%),
           and Coin Silver (90%) breakdowns.
         </p>
 
-        <h2>Gold Price by Purity (Karat)</h2>
-        <ul>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">Gold Price by Purity (Karat)</h2>
+        <ul style="color: #94a3b8; padding-left: 20px;">
           <li><strong>24K Gold (99.9%)</strong> — The highest purity, used in bullion coins and bars</li>
           <li><strong>22K Gold (91.6%)</strong> — Standard for jewelry in India and the Middle East</li>
           <li><strong>18K Gold (75.0%)</strong> — Common in European and American jewelry</li>
           <li><strong>14K Gold (58.3%)</strong> — Durable alloy for everyday rings</li>
         </ul>
 
-        <h2>Today's Precious Metal Prices</h2>
-        <ul>
-          <li><strong>Gold (XAU)</strong> — Live spot price updated every minute</li>
-          <li><strong>Silver (XAG)</strong> — Live spot price per gram, per ounce, per kg</li>
-          <li><strong>Platinum (XPT)</strong> — Live spot price with import duty</li>
-          <li><strong>Palladium (XPD)</strong> — Live spot price with import duty</li>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">Today's Precious Metal Prices</h2>
+        <ul style="color: #94a3b8; padding-left: 20px;">
+          <li><strong style="color: #F59E0B;">Gold (XAU)</strong> — Live spot price updated every minute</li>
+          <li><strong style="color: #9CA3AF;">Silver (XAG)</strong> — Live spot price per gram, per ounce, per kg</li>
+          <li><strong style="color: #38BDF8;">Platinum (XPT)</strong> — Live spot price with import duty</li>
+          <li><strong style="color: #A78BFA;">Palladium (XPD)</strong> — Live spot price with import duty</li>
         </ul>
 
-        <h2>India Gold GST & Import Duty Calculator</h2>
-        <p>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">India Gold GST &amp; Import Duty Calculator</h2>
+        <p style="color: #94a3b8;">
           Gold in India attracts <strong>15% import duty</strong> and <strong>3% GST</strong>.
           Jewelry also incurs 5% GST on making charges. Use our free calculator to
           compute the exact landed cost including all government taxes for any weight and purity.
         </p>
 
-        <h2>Country-Specific Tax Calculator</h2>
-        <p>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">Country-Specific Tax Calculator</h2>
+        <p style="color: #94a3b8;">
           Calculate the duty-paid and tax-inclusive price of gold, silver, platinum,
           and palladium in 13 countries: India, USA, UK, UAE, Germany, Canada, Australia,
           Japan, Switzerland, China, Russia, Indonesia, and South Africa.
         </p>
 
-        <h2>Frequently Asked Questions</h2>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">Frequently Asked Questions</h2>
 
-        <h3>What is the gold price today?</h3>
-        <p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">What is the gold price today?</h3>
+        <p style="color: #94a3b8;">
           The live gold spot price updates every 60 seconds on MetalPrices.online,
           sourced from international commodity exchanges. Visit the homepage to see
           the current price in USD, INR, EUR, and 10+ other currencies.
         </p>
 
-        <h3>What is the GST on gold in India in 2026?</h3>
-        <p>GST on gold in India is 3% on the gold value and 5% on making charges.</p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">What is the GST on gold in India in 2026?</h3>
+        <p style="color: #94a3b8;">GST on gold in India is 3% on the gold value and 5% on making charges.</p>
 
-        <h3>What is the import duty on gold in India in 2026?</h3>
-        <p>The basic customs duty on gold imported into India is 15% in 2026.</p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">What is the import duty on gold in India in 2026?</h3>
+        <p style="color: #94a3b8;">The basic customs duty on gold imported into India is 15% in 2026.</p>
 
-        <h3>How is gold price calculated in INR?</h3>
-        <p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">How is gold price calculated in INR?</h3>
+        <p style="color: #94a3b8;">
           The international spot price (USD per troy ounce) is converted to INR using
           the live USD/INR exchange rate, then divided by 31.1035 to get price per gram.
         </p>
 
-        <h3>What is the difference between 24K and 22K gold price?</h3>
-        <p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">What is the difference between 24K and 22K gold price?</h3>
+        <p style="color: #94a3b8;">
           24K gold is 99.9% pure and the most expensive per gram. 22K gold is 91.6% pure,
           costing roughly 91.6% of 24K gold for the same weight, before making charges.
         </p>
 
-        <h3>Which countries does the tax calculator support?</h3>
-        <p>
+        <h3 style="font-size: 16px; margin: 16px 0 4px;">Which countries does the tax calculator support?</h3>
+        <p style="color: #94a3b8;">
           Our calculator supports India, USA, UK, UAE, Germany, Canada, Australia,
           Japan, Switzerland, China, Russia, Indonesia, and South Africa — each with
           their correct import duties and VAT/GST rates.
         </p>
 
-        <h2>Quick Links</h2>
-        <ul>
-          <li><a href="/india/gold">Gold Price in India Today</a></li>
-          <li><a href="/india/silver">Silver Price in India Today</a></li>
-          <li><a href="/united-states/gold">Gold Price in USA</a></li>
-          <li><a href="/united-arab-emirates/gold">Gold Price in UAE (Dubai)</a></li>
-          <li><a href="/united-kingdom/gold">Gold Price in UK</a></li>
-          <li><a href="/blogs">Weekly Precious Metals Reports</a></li>
-          <li><a href="/tips">How Precious Metal Investing Works</a></li>
+        <h2 style="font-size: 20px; margin: 20px 0 8px;">Quick Links</h2>
+        <ul style="padding-left: 20px;">
+          <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India Today</a></li>
+          <li><a href="/india/silver/" style="color: #60a5fa;">Silver Price in India Today</a></li>
+          <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
+          <li><a href="/united-arab-emirates/gold/" style="color: #60a5fa;">Gold Price in UAE (Dubai)</a></li>
+          <li><a href="/united-kingdom/gold/" style="color: #60a5fa;">Gold Price in UK</a></li>
+          <li><a href="/germany/gold/" style="color: #60a5fa;">Gold Price in Germany</a></li>
+          <li><a href="/japan/gold/" style="color: #60a5fa;">Gold Price in Japan</a></li>
+          <li><a href="/australia/gold/" style="color: #60a5fa;">Gold Price in Australia</a></li>
+          <li><a href="/blogs" style="color: #60a5fa;">Weekly Precious Metals Reports</a></li>
+          <li><a href="/tips" style="color: #60a5fa;">How Precious Metal Investing Works</a></li>
         </ul>
 
-        <p><strong>Note:</strong> Please enable JavaScript for the full live price experience.</p>
       </div>
-    </noscript>
-
-    <div id="root"></div>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Google Tag deferred — load after the SPA has painted to avoid blocking FCP/LCP -->

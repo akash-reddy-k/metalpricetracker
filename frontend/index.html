@@ -2,166 +2,300 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Live Gold & Silver Prices | Import Duty & GST Calculator | MetalPrices.online</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 
-    <!-- Primary SEO Meta Tags -->
-    <meta name="title" content="Live Gold & Silver Prices | Import Duty & GST Calculator" />
+    <!-- Preconnect to critical origins for faster resource fetching -->
+    <link rel="preconnect" href="https://api.metalprices.online" crossorigin />
+    <link rel="dns-prefetch" href="https://api.metalprices.online" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="dns-prefetch" href="https://freeipapi.com" />
+
+    <!-- Primary title — lead with the broadest high-volume keyword -->
+    <title>Gold Price Today | Live Gold, Silver, Platinum Rates | MetalPrices.online</title>
+
+    <!-- SEO Meta Tags -->
+    <meta name="title" content="Gold Price Today | Live Gold, Silver, Platinum & Palladium Rates" />
     <meta
-            name="description"
-            content="Track real-time Gold, Silver, Platinum & Palladium spot prices. Calculate import duty, GST, and VAT costs for India and 10+ countries. Free precious metals tax calculator."
+      name="description"
+      content="Live gold price today per gram and per ounce. Track real-time gold, silver, platinum &amp; palladium spot rates in USD, INR, EUR &amp; 10+ currencies. Free import duty, GST &amp; VAT calculator for India, USA, UK, UAE and more."
     />
     <meta
-            name="keywords"
-            content="gold price today india, gold gst calculator india, silver rate live INR, import duty gold india, precious metals spot price, gold price per gram india 2026"
+      name="keywords"
+      content="gold price today, live gold price, gold rate today, silver price today, gold price per gram, gold price in india, gold spot price, platinum price, palladium price, gold import duty india, gold gst calculator, precious metals prices, gold rate today india 2026, silver rate today, gold price usd, gold price chart"
     />
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large" />
     <link rel="canonical" href="https://metalprices.online/" />
+
+    <!-- Alternate language/region hints for multi-currency pages -->
+    <link rel="alternate" hreflang="en" href="https://metalprices.online/" />
+    <link rel="alternate" hreflang="en-IN" href="https://metalprices.online/india/gold" />
+    <link rel="alternate" hreflang="en-AE" href="https://metalprices.online/united-arab-emirates/gold" />
+    <link rel="alternate" hreflang="x-default" href="https://metalprices.online/" />
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://metalprices.online/" />
-    <meta property="og:title" content="Live Gold & Silver Prices | Import Duty & GST Calculator" />
+    <meta property="og:title" content="Gold Price Today | Live Gold, Silver, Platinum Rates" />
     <meta
-            property="og:description"
-            content="Track live spot rates for Gold, Silver, Platinum, and Palladium. Calculate duty-paid and GST-inclusive pricing for India and 10+ countries."
+      property="og:description"
+      content="Track live spot rates for Gold, Silver, Platinum, and Palladium. Free import duty, GST &amp; VAT calculator for 13+ countries."
     />
     <meta property="og:image" content="https://metalprices.online/og-image.png" />
+    <meta property="og:site_name" content="MetalPrices.online" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://metalprices.online/" />
-    <meta property="twitter:title" content="Live Gold & Silver Prices | Import Duty & GST Calculator" />
+    <meta property="twitter:title" content="Gold Price Today | Live Gold, Silver, Platinum Rates" />
     <meta
-            property="twitter:description"
-            content="Track live spot rates for Gold, Silver, Platinum, and Palladium. Calculate duty-paid and GST-inclusive pricing for India and 10+ countries."
+      property="twitter:description"
+      content="Track live spot rates for Gold, Silver, Platinum, and Palladium. Free import duty, GST &amp; VAT calculator for 13+ countries."
     />
     <meta property="twitter:image" content="https://metalprices.online/og-image.png" />
 
-    <!-- Structured Data JSON-LD -->
+    <!-- Structured Data: Organization -->
     <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "WebApplication",
-            "name": "MetalPrices.online",
-            "url": "https://metalprices.online",
-            "description": "Live precious metals spot price tracker with country-specific import duty, GST, and VAT calculator for Gold, Silver, Platinum, and Palladium.",
-            "applicationCategory": "FinanceApplication",
-            "operatingSystem": "All",
-            "browserRequirements": "Requires JavaScript. Requires HTML5.",
-            "offers": {
-                "@type": "Offer",
-                "price": "0",
-                "priceCurrency": "USD"
-            },
-            "featureList": [
-                "Live gold spot price in INR",
-                "Live silver spot price in INR",
-                "India GST calculator for precious metals",
-                "Import duty calculator for gold and silver",
-                "10+ country tax localization"
-            ]
-        }
+      {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "name": "MetalPrices.online",
+        "url": "https://metalprices.online",
+        "logo": "https://metalprices.online/favicon.svg",
+        "sameAs": []
+      }
     </script>
 
+    <!-- Structured Data: WebApplication -->
     <script type="application/ld+json">
-        {
-            "@context": "https://schema.org",
-            "@type": "FAQPage",
-            "mainEntity": [
-                {
-                    "@type": "Question",
-                    "name": "What is the GST on gold in India?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "In India, GST on gold jewelry is 3% on the value of gold plus 5% on making charges. Use our calculator to compute the exact GST-inclusive price."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "What is the import duty on gold in India in 2026?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "The basic customs duty on gold imported into India is 15% as of 2026. Our calculator applies this automatically when computing landed cost."
-                    }
-                },
-                {
-                    "@type": "Question",
-                    "name": "How is the live gold price calculated in INR?",
-                    "acceptedAnswer": {
-                        "@type": "Answer",
-                        "text": "We convert the COMEX spot price (USD per troy ounce) to INR using the live USD/INR exchange rate, then divide by 31.1035 to get price per gram."
-                    }
-                }
-            ]
-        }
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "MetalPrices.online — Live Gold & Silver Price Tracker",
+        "url": "https://metalprices.online",
+        "description": "Live precious metals spot price tracker with country-specific import duty, GST, and VAT calculator for Gold, Silver, Platinum, and Palladium.",
+        "applicationCategory": "FinanceApplication",
+        "operatingSystem": "All",
+        "browserRequirements": "Requires JavaScript. Requires HTML5.",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Live gold price per gram and per ounce",
+          "Live silver, platinum, palladium spot prices",
+          "13+ currency conversions (USD, INR, EUR, GBP, AED, JPY, etc.)",
+          "India GST calculator for gold and silver",
+          "Import duty calculator for precious metals",
+          "Purity pricing (24K, 22K, 18K, Sterling, etc.)",
+          "Weekly market reports and investment tips"
+        ]
+      }
     </script>
 
-    <!-- Google Tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=%VITE_GOOGLE_TAG_ID%"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-        gtag('js', new Date());
-        gtag('config', '%VITE_GOOGLE_TAG_ID%');
+    <!-- Structured Data: BreadcrumbList (helps sitelinks) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://metalprices.online/" },
+          { "@type": "ListItem", "position": 2, "name": "India Gold Price", "item": "https://metalprices.online/india/gold" },
+          { "@type": "ListItem", "position": 3, "name": "India Silver Price", "item": "https://metalprices.online/india/silver" },
+          { "@type": "ListItem", "position": 4, "name": "Blogs", "item": "https://metalprices.online/blogs" },
+          { "@type": "ListItem", "position": 5, "name": "Investment Tips", "item": "https://metalprices.online/tips" }
+        ]
+      }
     </script>
-</head>
+
+    <!-- Structured Data: FAQPage (rich results) -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "What is the gold price today?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The live gold spot price updates every 60 seconds on MetalPrices.online, sourced from international commodity exchanges. Visit the homepage to see the current price in USD, INR, EUR, and 10+ other currencies."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the GST on gold in India in 2026?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "In India, GST on gold jewelry is 3% on the value of gold plus 5% on making charges. For gold bars and coins, GST is 3%. Use our calculator to compute the exact GST-inclusive price for any weight and purity."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the import duty on gold in India in 2026?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "The basic customs duty on gold imported into India is 15% as of 2026. Our calculator applies this automatically when computing the landed cost in INR."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "How is the live gold price calculated in INR?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "We convert the international spot price (USD per troy ounce) to INR using the live USD/INR exchange rate, then scale to per-gram or per-tola. Import duty of 15% is added to get the duty-paid price."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "What is the difference between 24K and 22K gold price?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "24K gold is 99.9% pure and commands the highest price. 22K gold is 91.6% pure — its price is roughly 91.6% of 24K gold for the same weight. Our purity pricing table shows exact prices for all karats."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Which countries does the precious metals tax calculator support?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Our calculator supports 13 countries: India, USA, UK, UAE, Germany, Canada, Australia, Japan, Switzerland, China, Russia, Indonesia, and South Africa — each with their correct import duties and VAT/GST rates."
+            }
+          }
+        ]
+      }
+    </script>
+
+  </head>
   <body>
 
-  <!-- This is seen by Google even without JavaScript -->
-  <noscript>
+    <!-- Noscript: Googlebot crawls this HTML even without JS rendering -->
+    <noscript>
       <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
 
-          <h1>Live Gold & Silver Prices in India | Import Duty & GST Calculator</h1>
-          <p>
-              Track real-time spot prices for Gold, Silver, Platinum, and Palladium.
-              Calculate GST-inclusive and import-duty-paid prices for India and 10+ countries.
-          </p>
+        <h1>Gold Price Today — Live Gold, Silver, Platinum & Palladium Spot Rates</h1>
+        <p>
+          <strong>MetalPrices.online</strong> tracks real-time precious metals spot prices
+          from international commodity exchanges. Prices update every 60 seconds in
+          <strong>13 currencies</strong> including USD, INR, EUR, GBP, AED, JPY, and more.
+        </p>
 
-          <h2>Today's Precious Metal Prices in India (INR)</h2>
-          <ul>
-              <li><strong>Gold (24K)</strong> – Live spot price in INR per gram, updated every minute</li>
-              <li><strong>Silver</strong> – Live spot price in INR per gram and per kg</li>
-              <li><strong>Platinum</strong> – Live spot price in INR</li>
-              <li><strong>Palladium</strong> – Live spot price in INR</li>
-          </ul>
+        <h2>Live Gold Price Today</h2>
+        <p>
+          See the current gold price per gram, per ounce, and per kilogram.
+          Our gold rate includes live exchange-rate conversion and
+          import-duty adjustment for your country.
+        </p>
 
-          <h2>India Gold GST & Import Duty Calculator</h2>
-          <p>
-              Gold jewelry in India attracts 3% GST on gold value and 5% GST on making charges.
-              Basic customs duty on imported gold is 15%.
-              Use our free calculator to compute the exact landed cost including all taxes.
-          </p>
+        <h2>Live Silver Price Today</h2>
+        <p>
+          Track the silver spot price in real time. Silver price per gram, per ounce,
+          and per kilogram — with Fine Silver (99.9%), Sterling (92.5%),
+          and Coin Silver (90%) breakdowns.
+        </p>
 
-          <h2>Frequently Asked Questions</h2>
+        <h2>Gold Price by Purity (Karat)</h2>
+        <ul>
+          <li><strong>24K Gold (99.9%)</strong> — The highest purity, used in bullion coins and bars</li>
+          <li><strong>22K Gold (91.6%)</strong> — Standard for jewelry in India and the Middle East</li>
+          <li><strong>18K Gold (75.0%)</strong> — Common in European and American jewelry</li>
+          <li><strong>14K Gold (58.3%)</strong> — Durable alloy for everyday rings</li>
+        </ul>
 
-          <h3>What is the GST on gold in India?</h3>
-          <p>GST on gold in India is 3% on the gold value and 5% on making charges as of 2026.</p>
+        <h2>Today's Precious Metal Prices</h2>
+        <ul>
+          <li><strong>Gold (XAU)</strong> — Live spot price updated every minute</li>
+          <li><strong>Silver (XAG)</strong> — Live spot price per gram, per ounce, per kg</li>
+          <li><strong>Platinum (XPT)</strong> — Live spot price with import duty</li>
+          <li><strong>Palladium (XPD)</strong> — Live spot price with import duty</li>
+        </ul>
 
-          <h3>What is the import duty on gold in India in 2026?</h3>
-          <p>The basic customs duty on gold imported into India is 15% in 2026.</p>
+        <h2>India Gold GST & Import Duty Calculator</h2>
+        <p>
+          Gold in India attracts <strong>15% import duty</strong> and <strong>3% GST</strong>.
+          Jewelry also incurs 5% GST on making charges. Use our free calculator to
+          compute the exact landed cost including all government taxes for any weight and purity.
+        </p>
 
-          <h3>How is gold price calculated in INR?</h3>
-          <p>
-              The COMEX spot price in USD per troy ounce is converted to INR using
-              the live USD/INR exchange rate, then divided by 31.1035 to get price per gram.
-          </p>
+        <h2>Country-Specific Tax Calculator</h2>
+        <p>
+          Calculate the duty-paid and tax-inclusive price of gold, silver, platinum,
+          and palladium in 13 countries: India, USA, UK, UAE, Germany, Canada, Australia,
+          Japan, Switzerland, China, Russia, Indonesia, and South Africa.
+        </p>
 
-          <h3>Which countries does the tax calculator support?</h3>
-          <p>
-              Our calculator supports India, USA, UK, UAE, Germany, Singapore,
-              Australia, Canada, Japan, and more — each with their correct
-              import duties and VAT/GST rates.
-          </p>
+        <h2>Frequently Asked Questions</h2>
 
-          <p><strong>Note:</strong> Please enable JavaScript for the full live price experience.</p>
+        <h3>What is the gold price today?</h3>
+        <p>
+          The live gold spot price updates every 60 seconds on MetalPrices.online,
+          sourced from international commodity exchanges. Visit the homepage to see
+          the current price in USD, INR, EUR, and 10+ other currencies.
+        </p>
+
+        <h3>What is the GST on gold in India in 2026?</h3>
+        <p>GST on gold in India is 3% on the gold value and 5% on making charges.</p>
+
+        <h3>What is the import duty on gold in India in 2026?</h3>
+        <p>The basic customs duty on gold imported into India is 15% in 2026.</p>
+
+        <h3>How is gold price calculated in INR?</h3>
+        <p>
+          The international spot price (USD per troy ounce) is converted to INR using
+          the live USD/INR exchange rate, then divided by 31.1035 to get price per gram.
+        </p>
+
+        <h3>What is the difference between 24K and 22K gold price?</h3>
+        <p>
+          24K gold is 99.9% pure and the most expensive per gram. 22K gold is 91.6% pure,
+          costing roughly 91.6% of 24K gold for the same weight, before making charges.
+        </p>
+
+        <h3>Which countries does the tax calculator support?</h3>
+        <p>
+          Our calculator supports India, USA, UK, UAE, Germany, Canada, Australia,
+          Japan, Switzerland, China, Russia, Indonesia, and South Africa — each with
+          their correct import duties and VAT/GST rates.
+        </p>
+
+        <h2>Quick Links</h2>
+        <ul>
+          <li><a href="/india/gold">Gold Price in India Today</a></li>
+          <li><a href="/india/silver">Silver Price in India Today</a></li>
+          <li><a href="/united-states/gold">Gold Price in USA</a></li>
+          <li><a href="/united-arab-emirates/gold">Gold Price in UAE (Dubai)</a></li>
+          <li><a href="/united-kingdom/gold">Gold Price in UK</a></li>
+          <li><a href="/blogs">Weekly Precious Metals Reports</a></li>
+          <li><a href="/tips">How Precious Metal Investing Works</a></li>
+        </ul>
+
+        <p><strong>Note:</strong> Please enable JavaScript for the full live price experience.</p>
       </div>
-  </noscript>
+    </noscript>
 
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Google Tag deferred — load after the SPA has painted to avoid blocking FCP/LCP -->
+    <script>
+      (function() {
+        function loadGtag() {
+          var s = document.createElement('script');
+          s.src = 'https://www.googletagmanager.com/gtag/js?id=%VITE_GOOGLE_TAG_ID%';
+          s.async = true;
+          document.head.appendChild(s);
+          window.dataLayer = window.dataLayer || [];
+          function gtag() { dataLayer.push(arguments); }
+          gtag('js', new Date());
+          gtag('config', '%VITE_GOOGLE_TAG_ID%');
+        }
+        if ('requestIdleCallback' in window) {
+          requestIdleCallback(loadGtag, { timeout: 3000 });
+        } else {
+          setTimeout(loadGtag, 2000);
+        }
+      })();
+    </script>
   </body>
 </html>

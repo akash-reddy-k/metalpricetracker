@@ -1,0 +1,24 @@
+# MetalPrices.online
+
+> Live precious metals spot price tracker with country-specific import duty, GST, and VAT calculator for Gold, Silver, Platinum, and Palladium across 13 countries.
+
+## Main Pages
+
+- [Home](https://metalprices.online/): Live spot prices for Gold, Silver, Platinum, Palladium with real-time updates, tax calculator, and analytics
+- [Blogs](https://metalprices.online/blogs): Weekly precious metals market reports and analysis
+- [Tips](https://metalprices.online/tips): Precious metals investment tips and guides
+
+## Country + Metal Pages
+
+- [Gold Price in India](https://metalprices.online/india/gold): Live gold price in INR with 15% import duty and 3% GST breakdown
+- [Silver Price in India](https://metalprices.online/india/silver): Live silver price in INR with duty and GST
+- [Gold Price in USA](https://metalprices.online/united-states/gold): Live gold price in USD
+- [Gold Price in UAE](https://metalprices.online/united-arab-emirates/gold): Live gold price in AED with 5% duty and 5% VAT
+- [Gold Price in UK](https://metalprices.online/united-kingdom/gold): Live gold price in GBP with 20% VAT
+- [Gold Price in Germany](https://metalprices.online/germany/gold): Live gold price in EUR
+- [Gold Price in Japan](https://metalprices.online/japan/gold): Live gold price in JPY
+- [Gold Price in Australia](https://metalprices.online/australia/gold): Live gold price in AUD
+
+## Optional
+
+- [llms-full.txt](https://metalprices.online/llms-full.txt): Extended information about data, calculations, and supported countries

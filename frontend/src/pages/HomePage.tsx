@@ -4,8 +4,7 @@ import type { AppOutletContext } from '../types/metals';
 import { LivePriceCards } from '../components/LivePriceCards';
 import { Calculator } from '../components/Calculator';
 
-// Lazy-load heavy chart components so above-the-fold content paints first.
-const TradingViewChart = lazy(() => import('../components/TradingViewChart'));
+// Lazy-load heavy chart component so above-the-fold content paints first.
 const AnalyticsChart = lazy(() => import('../components/AnalyticsChart'));
 
 const ChartFallback = () => (
@@ -28,11 +27,6 @@ export const HomePage: React.FC = () => {
         exchangeRates={ctx.exchangeRates}
         changePercents={ctx.changePercents}
       />
-
-      {/* TradingView professional chart — candlesticks, indicators, drawing tools */}
-      <Suspense fallback={<ChartFallback />}>
-        <TradingViewChart activeMetal={ctx.activeMetal} selectedCurrency={ctx.selectedCurrency} />
-      </Suspense>
 
       <Calculator
         activeMetal={ctx.activeMetal}

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.3.1...metalprices-frontend-v0.4.0) (2026-10-08)
+
+
+### Features
+
+* add automated weekly news system with rich article pages ([59fb62c](https://github.com/akash-reddy-k/metalpricetracker/commit/59fb62c9e3711b1e61868ca65e82aee8c57ec02d))
+* add automated weekly news system with rich article pages ([fe4e258](https://github.com/akash-reddy-k/metalpricetracker/commit/fe4e2582bfcbf00d288a1a9f6295e908154708c3))
+
+
+### Bug Fixes
+
+* stop cache-poisoning white screen on missing assets ([cde5460](https://github.com/akash-reddy-k/metalpricetracker/commit/cde5460ec3f2595e2a55689d3e9d6b68b87d2f3d))
+
 ## [0.3.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.3.0...metalprices-frontend-v0.3.1) (2026-10-08)
 
 

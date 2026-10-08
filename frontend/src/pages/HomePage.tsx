@@ -31,7 +31,7 @@ export const HomePage: React.FC = () => {
 
       {/* TradingView professional chart — candlesticks, indicators, drawing tools */}
       <Suspense fallback={<ChartFallback />}>
-        <TradingViewChart activeMetal={ctx.activeMetal} />
+        <TradingViewChart activeMetal={ctx.activeMetal} selectedCurrency={ctx.selectedCurrency} />
       </Suspense>
 
       <Calculator

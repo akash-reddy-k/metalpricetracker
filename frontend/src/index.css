@@ -1637,3 +1637,22 @@ body {
     align-self: center !important;
   }
 }
+
+/* TradingView chart wrapper — height uses !important to resist
+   TradingView's embed script which aggressively overrides inline
+   styles and ancestor element dimensions. */
+.tv-chart-wrapper {
+  height: 620px !important;
+  width: 100% !important;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+/* Ensure all TradingView child elements fill the wrapper */
+.tv-chart-wrapper > div,
+.tv-chart-wrapper > div > div,
+.tv-chart-wrapper iframe {
+  height: 100% !important;
+  width: 100% !important;
+}

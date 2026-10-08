@@ -1,0 +1,73 @@
+[
+  {
+    "slug": "2026-10-08-metals-weekly",
+    "titleSlug": "silver-slides-1-1",
+    "title": "Silver slides 1.1% — Weekly Metals Roundup",
+    "date": "2026-10-08",
+    "summary": "Gold at $4,123.91, silver at $59.12. Silver slides 1.1%, with the dollar, interest rates and oil in focus.",
+    "intro": "Welcome to this week's plain-English roundup of the precious-metals market. Gold gained to $4,123.91 per troy ounce while silver changed hands near $59.12, and the bigger forces in the background — the US dollar, interest rates and the oil price — all played their part. Below we walk through what happened, why it happened, and what it could mean for the price you pay in your own country.",
+    "sections": [
+      {
+        "heading": "What moved this week",
+        "paragraphs": [
+          "Gold gained to $4,123.91 and silver fell sharply to $59.12 per troy ounce (a troy ounce is the standard unit for pricing precious metals, about 31.1 grams). Among the \"platinum-group\" metals used heavily in industry, platinum sat at $1,640.25 and palladium at $1,123.24.",
+          "One quick gauge traders watch is the gold-to-silver ratio — how many ounces of silver it takes to buy one ounce of gold. It stands at about 69.8 this week. A high ratio is often read as silver being cheap relative to gold, though silver also swings harder in both directions because so much of its demand comes from industry."
+        ]
+      },
+      {
+        "heading": "The US dollar: the single biggest driver",
+        "paragraphs": [
+          "Gold and silver are priced in US dollars all around the world, so the dollar's strength matters enormously. The US Dollar Index — a simple scorecard that measures the dollar against a basket of other major currencies — climbed to 102.29 and was stronger on the week.",
+          "When the dollar strengthens, it takes more of every other currency to buy the same ounce of gold, which usually cools international demand and pushes the dollar price down. When the dollar weakens, the opposite tends to happen and metals often catch a bid. That is why a quiet week for metals prices often hides a busy week in the currency market."
+        ]
+      },
+      {
+        "heading": "Interest rates and the cost of holding gold",
+        "paragraphs": [
+          "Interest rates are the second big lever. We track them through the US 10-year Treasury yield — the interest the US government pays to borrow money for ten years, and a benchmark for rates across the economy. This week it eased to 5.28%.",
+          "Here is the key idea: gold pays you no interest. So when safe bonds offer a high yield, holding gold means giving up that income, and gold becomes less attractive — a \"headwind\". When yields fall, that trade-off shrinks and gold usually becomes more appealing. Rates and the dollar are also linked: when a central bank like the US Federal Reserve raises rates, the dollar often strengthens too, which can press on metals from two directions at once."
+        ]
+      },
+      {
+        "heading": "Crude oil, inflation and the wider economy",
+        "paragraphs": [
+          "Oil might seem unrelated to gold, but it is an important inflation signal. WTI crude — the main US oil benchmark — firmed to $92.22 a barrel this week.",
+          "Expensive oil feeds through to fuel, transport and manufacturing costs, which can lift inflation across the board. Because gold is widely used as a hedge against inflation — a store of value when money is losing purchasing power — a sustained rise in oil can quietly support demand for gold, even as it squeezes household budgets elsewhere."
+        ]
+      },
+      {
+        "heading": "What it means for your country",
+        "paragraphs": [
+          "The headline prices above are international spot prices in US dollars. The price you actually pay at home is roughly that international price converted into your currency, plus local import duties, sales taxes (such as GST or VAT) and the dealer's premium.",
+          "The currency step is the one people miss. Suppose gold is flat in dollars but your local currency weakens against the dollar — your local gold price still goes up, because each unit of your money now buys fewer dollars' worth of metal. Take India as an example: if the rupee softens versus the dollar, rupee gold prices can climb even on a calm week internationally. The same logic applies to any currency, so always watch your currency-versus-dollar rate alongside the global price. Our calculator can convert the all-in cost for your country and purity."
+        ]
+      },
+      {
+        "heading": "What to watch next week",
+        "paragraphs": [
+          "Keep an eye on three things: the direction of the US dollar, the path of Treasury yields, and any fresh inflation or central-bank news. If the dollar keeps strengthening and yields climb, gold and silver may stay under pressure in dollar terms. If the dollar softens or yields fall, metals could find more support.",
+          "For buyers, the steadier approach is usually to spread purchases over time rather than trying to pick the exact bottom, and to compare the all-in local cost — not just the spot price — before committing. None of this is financial advice; it is a framework to help you read the week for yourself."
+        ]
+      }
+    ],
+    "keyTakeaways": [
+      "Gold is around $4,123.91 and silver around $59.12 per troy ounce this week.",
+      "A stronger US dollar (index at 102.29) is typically a headwind for metals; a weaker dollar helps.",
+      "Higher interest rates (10-year yield at 5.28%) make non-yielding gold less attractive; falling rates help it.",
+      "Rising crude oil ($92.22) can lift inflation, which often supports gold over time.",
+      "Your local price = international price × your currency-vs-dollar rate, plus local taxes and premiums."
+    ],
+    "chartSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 640 298\" width=\"100%\" height=\"auto\" role=\"img\" aria-label=\"Precious metals daily performance chart\">\n  <rect width=\"640\" height=\"298\" fill=\"#0b0b12\" rx=\"12\" />\n  <text x=\"22\" y=\"32\" fill=\"#e2e8f0\" font-size=\"16\" font-weight=\"700\" font-family=\"Arial, sans-serif\">Metals performance — latest session</text>\n  <line x1=\"330\" y1=\"48\" x2=\"330\" y2=\"286\" stroke=\"#334155\" stroke-width=\"1\" stroke-dasharray=\"3 3\" />\n  <text x=\"22\" y=\"76\" fill=\"#e2e8f0\" font-size=\"15\" font-weight=\"600\" font-family=\"Arial, sans-serif\">Gold</text>\n  <text x=\"22\" y=\"95\" fill=\"#94a3b8\" font-size=\"12\" font-family=\"Arial, sans-serif\">$4,123.91/oz</text>\n  <rect x=\"330.0\" y=\"62\" width=\"43.3\" height=\"26\" rx=\"4\" fill=\"#10b981\" opacity=\"0.85\" />\n  <text x=\"381.3\" y=\"80\" fill=\"#10b981\" font-size=\"13\" font-weight=\"700\" text-anchor=\"start\" font-family=\"Arial, sans-serif\">+0.32%</text>\n  <text x=\"22\" y=\"132\" fill=\"#e2e8f0\" font-size=\"15\" font-weight=\"600\" font-family=\"Arial, sans-serif\">Silver</text>\n  <text x=\"22\" y=\"151\" fill=\"#94a3b8\" font-size=\"12\" font-family=\"Arial, sans-serif\">$59.12/oz</text>\n  <rect x=\"180.0\" y=\"118\" width=\"150.0\" height=\"26\" rx=\"4\" fill=\"#ef4444\" opacity=\"0.85\" />\n  <text x=\"172.0\" y=\"136\" fill=\"#ef4444\" font-size=\"13\" font-weight=\"700\" text-anchor=\"end\" font-family=\"Arial, sans-serif\">-1.11%</text>\n  <text x=\"22\" y=\"188\" fill=\"#e2e8f0\" font-size=\"15\" font-weight=\"600\" font-family=\"Arial, sans-serif\">Platinum</text>\n  <text x=\"22\" y=\"207\" fill=\"#94a3b8\" font-size=\"12\" font-family=\"Arial, sans-serif\">$1,640.25/oz</text>\n  <rect x=\"330.0\" y=\"174\" width=\"54.9\" height=\"26\" rx=\"4\" fill=\"#10b981\" opacity=\"0.85\" />\n  <text x=\"392.9\" y=\"192\" fill=\"#10b981\" font-size=\"13\" font-weight=\"700\" text-anchor=\"start\" font-family=\"Arial, sans-serif\">+0.41%</text>\n  <text x=\"22\" y=\"244\" fill=\"#e2e8f0\" font-size=\"15\" font-weight=\"600\" font-family=\"Arial, sans-serif\">Palladium</text>\n  <text x=\"22\" y=\"263\" fill=\"#94a3b8\" font-size=\"12\" font-family=\"Arial, sans-serif\">$1,123.24/oz</text>\n  <rect x=\"330.0\" y=\"230\" width=\"81.6\" height=\"26\" rx=\"4\" fill=\"#10b981\" opacity=\"0.85\" />\n  <text x=\"419.6\" y=\"248\" fill=\"#10b981\" font-size=\"13\" font-weight=\"700\" text-anchor=\"start\" font-family=\"Arial, sans-serif\">+0.61%</text>\n</svg>",
+    "prices": {
+      "gold": 4123.91,
+      "silver": 59.124,
+      "platinum": 1640.254,
+      "palladium": 1123.237
+    },
+    "macro": {
+      "dollarIndex": 102.288,
+      "us10y": 5.282,
+      "crude": 92.22
+    }
+  }
+]

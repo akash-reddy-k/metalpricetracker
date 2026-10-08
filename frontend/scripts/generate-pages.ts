@@ -387,7 +387,7 @@ function siteHeader(): string {
   <a href="${DOMAIN}" style="color:#e2e8f0;font-weight:700;font-size:16px;text-decoration:none;">MetalPrices.Online</a>
   <nav style="display:flex;gap:6px;align-items:center;">
     <a href="${DOMAIN}/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">Home</a>
-    <a href="${DOMAIN}/blogs/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Blogs</a>
+    <a href="${DOMAIN}/news/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">News</a>
     <a href="${DOMAIN}/tips/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Tips</a>
   </nav>
 </div>`;
@@ -689,44 +689,71 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-// ── Blogs page (SPA shell) ──────────────────────────────────────────────────
+// ── News pages (SPA shell) ───────────────────────────────────────────────────
 
-function buildBlogsPage(): string {
-  const title = 'Weekly Precious Metals Market Reports | MetalPrices.Online';
-  const description = 'Weekly market analysis and reports covering gold, silver, platinum, and palladium price movements, central bank policy, and investment insights.';
-  const canonicalPath = '/blogs/';
+interface NewsSectionData {
+  heading: string;
+  paragraphs: string[];
+}
 
-  const breadcrumbLd = {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
-      { '@type': 'ListItem', position: 2, name: 'Blogs', item: `${DOMAIN}${canonicalPath}` },
-    ],
-  };
+interface NewsArticleData {
+  slug: string;
+  titleSlug: string;
+  title: string;
+  date: string;
+  summary: string;
+  intro: string;
+  sections: NewsSectionData[];
+  keyTakeaways: string[];
+  chartSvg: string;
+  prices?: { gold: number; silver: number; platinum: number; palladium: number };
+  macro?: { dollarIndex: number; us10y: number; crude: number };
+}
 
-  const jsonLdBlock = `<script type="application/ld+json">${JSON.stringify(breadcrumbLd, null, 2)}</script>`;
+/** Curated further-reading links — mirrors REFERENCE_LINKS in src/data/news.ts. */
+const NEWS_REFERENCE_LINKS: Array<{ label: string; href: string }> = [
+  { label: 'US Dollar Index (DXY) live chart — TradingView', href: 'https://www.tradingview.com/symbols/TVC-DXY/' },
+  { label: 'US 10-Year Treasury yield — TradingView', href: 'https://www.tradingview.com/symbols/TVC-US10Y/' },
+  { label: 'WTI crude oil price — TradingView', href: 'https://www.tradingview.com/symbols/NYMEX-CL1!/' },
+  { label: 'What moves the gold price? — World Gold Council', href: 'https://www.gold.org/goldhub/research/market-primer/drivers-of-gold' },
+  { label: 'Federal Reserve: monetary policy & interest rates', href: 'https://www.federalreserve.gov/monetarypolicy.htm' },
+];
 
-  const noscriptContent = `
-      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #e2e8f0;">
-        <h1>Weekly Precious Metals Market Reports</h1>
-        <p style="color: #94a3b8;">Our take on what moved gold, silver, platinum, and palladium each week.</p>
+function loadNewsArticles(): NewsArticleData[] {
+  try {
+    const raw = fs.readFileSync(path.resolve(__dir, '../src/data/news.json'), 'utf8');
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
-        <h2>Gold holds firm as rate-cut bets build — Aug 24, 2026</h2>
-        <p style="color: #94a3b8;">Gold consolidated near record territory this week as softer inflation data strengthened expectations of a rate cut, while silver outperformed on industrial demand.</p>
+const NEWS_ARTICLES = loadNewsArticles();
 
-        <h2>Dollar strength caps precious metals — Aug 17, 2026</h2>
-        <p style="color: #94a3b8;">A firmer dollar and rising yields capped gains across the complex, though physical demand in Asia provided a floor under gold.</p>
+function newsDisplayDate(iso: string): string {
+  return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
 
-        <h2>Explore Prices</h2>
-        <ul>
-          <li><a href="/" style="color: #60a5fa;">Live Precious Metal Prices</a></li>
-          <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India</a></li>
-          <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
-          <li><a href="/tips/" style="color: #60a5fa;">Investment Tips &amp; Guides</a></li>
-        </ul>
-      </div>`;
+function newsArticlePath(a: NewsArticleData): string {
+  return `/news/${a.date}/${a.titleSlug}/`;
+}
 
+/** Injects route-specific SEO meta, JSON-LD, and a crawlable noscript body into
+ * the built SPA shell. React boots and hydrates over this identically. */
+function renderSpaShell(opts: {
+  title: string;
+  description: string;
+  canonicalPath: string;
+  jsonLd: object[];
+  noscriptContent: string;
+}): string {
+  const { title, description, canonicalPath, jsonLd, noscriptContent } = opts;
   let html = SPA_TEMPLATE;
 
   html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
@@ -741,9 +768,12 @@ function buildBlogsPage(): string {
   html = html.replace(/<meta\s+property="twitter:description"[\s\S]*?>/, `<meta property="twitter:description" content="${escapeHtml(description)}" />`);
 
   html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  const jsonLdBlock = jsonLd
+    .map((ld) => `<script type="application/ld+json">${JSON.stringify(ld, null, 2)}</script>`)
+    .join('\n');
   html = html.replace('</head>', `${jsonLdBlock}\n</head>`);
 
-  // Replace root div content
+  // Replace root div content with the crawlable noscript body
   const rootOpen = html.indexOf('<div id="root">');
   if (rootOpen !== -1) {
     const afterOpen = rootOpen + '<div id="root">'.length;
@@ -768,6 +798,150 @@ function buildBlogsPage(): string {
   }
 
   return html;
+}
+
+function buildNewsPage(): string {
+  const title = 'Weekly Precious Metals Market News | MetalPrices.Online';
+  const description = 'Automated weekly market analysis covering gold, silver, platinum, and palladium price movements, the US dollar, interest rates, and crude oil.';
+  const canonicalPath = '/news/';
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
+      { '@type': 'ListItem', position: 2, name: 'News', item: `${DOMAIN}${canonicalPath}` },
+    ],
+  };
+
+  const itemListLd = {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    itemListElement: NEWS_ARTICLES.map((a, idx) => ({
+      '@type': 'ListItem',
+      position: idx + 1,
+      url: `${DOMAIN}${newsArticlePath(a)}`,
+      name: a.title,
+    })),
+  };
+
+  const articleCards = NEWS_ARTICLES.map(
+    (a) => `
+        <article style="margin-bottom:18px;">
+          <h2 style="margin:0 0 4px;"><a href="${newsArticlePath(a)}" style="color:#e2e8f0;text-decoration:none;">${escapeHtml(a.title)}</a></h2>
+          <p style="margin:0;color:#64748b;font-size:13px;">${newsDisplayDate(a.date)}</p>
+          <p style="margin:6px 0 0;color:#94a3b8;">${escapeHtml(a.summary)}</p>
+        </article>`,
+  ).join('');
+
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #e2e8f0;">
+        <h1>Weekly Precious Metals Market News</h1>
+        <p style="color: #94a3b8;">Automated weekly analysis of gold, silver, platinum, and palladium price movements.</p>
+        ${articleCards}
+        <h2>Explore Prices</h2>
+        <ul>
+          <li><a href="/" style="color: #60a5fa;">Live Precious Metal Prices</a></li>
+          <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India</a></li>
+          <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
+          <li><a href="/tips/" style="color: #60a5fa;">Investment Tips &amp; Guides</a></li>
+        </ul>
+      </div>`;
+
+  return renderSpaShell({ title, description, canonicalPath, jsonLd: [breadcrumbLd, itemListLd], noscriptContent });
+}
+
+function buildNewsArticlePage(a: NewsArticleData): string {
+  const leadTitle = a.title.split(' — ')[0];
+  const title = `${leadTitle} | MetalPrices.Online`;
+  const description = a.summary;
+  const canonicalPath = newsArticlePath(a);
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
+      { '@type': 'ListItem', position: 2, name: 'News', item: `${DOMAIN}/news/` },
+      { '@type': 'ListItem', position: 3, name: leadTitle, item: `${DOMAIN}${canonicalPath}` },
+    ],
+  };
+
+  const fullBody = [a.intro, ...a.sections.flatMap((s) => s.paragraphs)].join('\n\n');
+
+  const articleLd = {
+    '@context': 'https://schema.org',
+    '@type': 'NewsArticle',
+    headline: a.title,
+    datePublished: a.date,
+    dateModified: a.date,
+    description: a.summary,
+    articleBody: fullBody,
+    mainEntityOfPage: { '@type': 'WebPage', '@id': `${DOMAIN}${canonicalPath}` },
+    author: { '@type': 'Organization', name: 'MetalPrices.Online', url: DOMAIN },
+    publisher: {
+      '@type': 'Organization',
+      name: 'MetalPrices.Online',
+      logo: { '@type': 'ImageObject', url: `${DOMAIN}/og-image.png` },
+    },
+  };
+
+  const priceStrip = a.prices
+    ? `<p style="color:#94a3b8;font-size:13px;">Gold $${fmt(a.prices.gold, 'USD')} · Silver $${fmt(a.prices.silver, 'USD')} · Platinum $${fmt(a.prices.platinum, 'USD')} · Palladium $${fmt(a.prices.palladium, 'USD')} (per troy ounce)</p>`
+    : '';
+
+  const macroStrip = a.macro
+    ? `<p style="color:#64748b;font-size:13px;">Dollar Index ${a.macro.dollarIndex.toFixed(2)} · US 10Y Yield ${a.macro.us10y.toFixed(2)}% · WTI Crude $${fmt(a.macro.crude, 'USD')}</p>`
+    : '';
+
+  const introPara = `<p style="color:#cbd5e1;line-height:1.7;font-size:17px;">${escapeHtml(a.intro)}</p>`;
+
+  const chart = a.chartSvg
+    ? `<figure style="margin:20px 0;max-width:640px;">${a.chartSvg}</figure>`
+    : '';
+
+  const sectionsHtml = a.sections
+    .map(
+      (s) =>
+        `<section>
+          <h2 style="font-size:20px;margin:28px 0 10px;">${escapeHtml(s.heading)}</h2>
+          ${s.paragraphs.map((p) => `<p style="color:#94a3b8;line-height:1.7;">${escapeHtml(p)}</p>`).join('\n          ')}
+        </section>`,
+    )
+    .join('\n        ');
+
+  const takeawaysHtml =
+    a.keyTakeaways.length > 0
+      ? `<section>
+          <h2 style="font-size:20px;margin:28px 0 10px;">Key takeaways</h2>
+          <ul style="color:#94a3b8;line-height:1.7;padding-left:20px;">
+            ${a.keyTakeaways.map((t) => `<li>${escapeHtml(t)}</li>`).join('\n            ')}
+          </ul>
+        </section>`
+      : '';
+
+  const referencesHtml = `<section>
+          <h2 style="font-size:20px;margin:28px 0 10px;">Further reading &amp; live data</h2>
+          <ul style="color:#60a5fa;line-height:1.8;padding-left:20px;">
+            ${NEWS_REFERENCE_LINKS.map((r) => `<li><a href="${r.href}" rel="noopener noreferrer" style="color:#60a5fa;">${escapeHtml(r.label)}</a></li>`).join('\n            ')}
+          </ul>
+        </section>`;
+
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 760px; margin: 0 auto; padding: 20px; color: #e2e8f0;">
+        <p style="margin:0 0 6px;"><a href="/news/" style="color:#60a5fa;text-decoration:none;">← All news</a></p>
+        <p style="margin:0;color:#64748b;font-size:13px;">${newsDisplayDate(a.date)}</p>
+        <h1 style="margin:4px 0 10px;">${escapeHtml(a.title)}</h1>
+        ${introPara}
+        ${priceStrip}
+        ${macroStrip}
+        ${chart}
+        ${sectionsHtml}
+        ${takeawaysHtml}
+        ${referencesHtml}
+      </div>`;
+
+  return renderSpaShell({ title, description, canonicalPath, jsonLd: [breadcrumbLd, articleLd], noscriptContent });
 }
 
 // ── Tips page (SPA shell) ───────────────────────────────────────────────────
@@ -813,7 +987,7 @@ function buildTipsPage(): string {
           <li><a href="/" style="color: #60a5fa;">Live Precious Metal Prices</a></li>
           <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India</a></li>
           <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
-          <li><a href="/blogs/" style="color: #60a5fa;">Weekly Market Reports</a></li>
+          <li><a href="/news/" style="color: #60a5fa;">Weekly Market News</a></li>
         </ul>
       </div>`;
 
@@ -864,17 +1038,24 @@ function buildTipsPage(): string {
 
 const sitemapUrls: Array<{ loc: string; priority: string; changefreq: string }> = [
   { loc: DOMAIN + '/', priority: '1.0', changefreq: 'always' },
-  { loc: DOMAIN + '/blogs/', priority: '0.7', changefreq: 'weekly' },
+  { loc: DOMAIN + '/news/', priority: '0.7', changefreq: 'weekly' },
   { loc: DOMAIN + '/tips/', priority: '0.6', changefreq: 'monthly' },
 ];
 
 let pageCount = 0;
 
-// Generate Blogs and Tips SPA shell pages
-write(path.join(DIST, 'blogs', 'index.html'), buildBlogsPage());
+// Generate News and Tips SPA shell pages
+write(path.join(DIST, 'news', 'index.html'), buildNewsPage());
 pageCount++;
 write(path.join(DIST, 'tips', 'index.html'), buildTipsPage());
 pageCount++;
+
+// Per-article news detail pages
+for (const article of NEWS_ARTICLES) {
+  write(path.join(DIST, 'news', article.date, article.titleSlug, 'index.html'), buildNewsArticlePage(article));
+  sitemapUrls.push({ loc: `${DOMAIN}${newsArticlePath(article)}`, priority: '0.6', changefreq: 'monthly' });
+  pageCount++;
+}
 
 for (const country of COUNTRIES) {
   // Country overview page

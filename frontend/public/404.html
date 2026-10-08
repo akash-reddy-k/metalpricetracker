@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Page not found | MetalPrices.Online</title>
+    <!--
+      Self-contained static 404 page. It must NOT reference any hashed JS/CSS
+      bundle: this file is also served (with a 404 status) for missing
+      /assets/*.js requests, so it has to be safe to return even when the app's
+      own bundles are unavailable. All styles are inlined for that reason.
+    -->
+    <style>
+      :root {
+        --bg-dark: #090a0f;
+        --text-primary: #f3f4f6;
+        --text-secondary: #9ca3af;
+        --text-muted: #6b7280;
+        --gold: #f59e0b;
+        --accent: #aa3bff;
+        --border-color: rgba(255, 255, 255, 0.08);
+        --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: var(--bg-dark);
+        color: var(--text-primary);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+        text-align: center;
+        padding: 24px;
+      }
+      .wrap { max-width: 440px; }
+      .code {
+        font-size: 84px;
+        font-weight: 700;
+        line-height: 1;
+        letter-spacing: -2px;
+        background: linear-gradient(135deg, var(--gold) 0%, var(--accent) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin: 0 0 8px;
+      }
+      h1 {
+        font-size: 22px;
+        font-weight: 600;
+        margin: 0 0 12px;
+        color: var(--text-primary);
+      }
+      p {
+        font-size: 15px;
+        line-height: 1.6;
+        color: var(--text-secondary);
+        margin: 0 0 28px;
+      }
+      a.home {
+        display: inline-block;
+        padding: 11px 22px;
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        background: linear-gradient(135deg, var(--gold) 0%, var(--accent) 100%);
+        color: #09090f;
+        font-weight: 600;
+        font-size: 14px;
+        text-decoration: none;
+      }
+      a.home:hover { opacity: 0.9; }
+      .foot {
+        margin-top: 32px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="code">404</div>
+      <h1>This page could not be found</h1>
+      <p>
+        The page you were looking for doesn&rsquo;t exist or may have moved. Live
+        gold, silver, platinum and palladium prices are waiting on the home page.
+      </p>
+      <a class="home" href="/">Back to live prices</a>
+      <div class="foot">MetalPrices.Online</div>
+    </div>
+  </body>
+</html>

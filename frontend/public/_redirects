@@ -1,1 +1,17 @@
-/* /index.html 200
+# A request for a hashed asset that does not exist must fail as an honest 404 —
+# it must NEVER fall through to a 200 HTML response. Static assets are matched by
+# Cloudflare before _redirects, so this rule only fires when the asset is
+# genuinely missing (e.g. a stale hash from a superseded build). Returning a 200
+# HTML body here, combined with the 1-year `immutable` cache on /assets/* (see
+# _headers), is what previously pinned index.html at a .js URL and left the app
+# as a white screen: the browser downloaded HTML, tried to execute it as a JS
+# module, threw a syntax error, and React never mounted.
+/assets/*  /404.html  404
+
+# NOTE: there is intentionally no `/* /index.html 200` SPA fallback. Every real
+# route is pre-rendered to a static index.html by scripts/generate-pages.ts, so
+# no fallback is needed for valid URLs. Cloudflare Pages automatically serves the
+# static 404.html (with a 404 status) for any unmatched path, which is the
+# correct behaviour for genuinely unknown routes. The old `/* /index.html 200`
+# rule was rejected by Cloudflare as an infinite loop anyway and did nothing but
+# risk serving HTML where an error belonged.

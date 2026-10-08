@@ -1,0 +1,56 @@
+name: Weekly News Generator
+
+on:
+  schedule:
+    # Every Sunday at 00:30 UTC (~6 AM IST)
+    - cron: '30 0 * * 0'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  generate-news:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate weekly news article
+        run: npm run generate-news
+        env:
+          # Free Google AI Studio key. If unset, the script falls back to a
+          # deterministic template so the job still produces an article.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.0-flash' }}
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet src/data/news.json && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/data/news.json
+          git commit -m "chore: add weekly metals news for $(date +%Y-%m-%d)"
+          git push

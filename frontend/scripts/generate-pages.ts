@@ -29,6 +29,13 @@ const METAL_COLOR: Record<Metal, string> = {
   gold: '#F59E0B', silver: '#9CA3AF', platinum: '#38BDF8', palladium: '#A78BFA',
 };
 
+interface City {
+  slug: string;
+  name: string;
+  /** Short local context line shown on the page, e.g. "home to the Zaveri Bazaar gold market". */
+  context: string;
+}
+
 interface Country {
   code: string;
   slug: string;
@@ -42,6 +49,7 @@ interface Country {
   unitMultiplier: number; // oz → displayUnit
   taxes: Record<Metal, { importDuty: number; vatGst: number }>;
   taxNote: string;
+  cities?: City[];
 }
 
 const COUNTRIES: Country[] = [
@@ -55,6 +63,20 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 15.0, vatGst: 18.0 },
     },
     taxNote: 'India charges 15% basic customs duty plus 3% GST on gold and silver. Platinum and palladium attract 15.4% duty and 18% GST — among the highest precious-metals tax rates in the world.',
+    cities: [
+      { slug: 'mumbai', name: 'Mumbai', context: 'home to the Zaveri Bazaar gold market, India\'s largest bullion trading hub' },
+      { slug: 'delhi', name: 'Delhi', context: 'home to Dariba Kalan and Chandni Chowk, North India\'s primary gold trading centres' },
+      { slug: 'chennai', name: 'Chennai', context: 'a major South Indian gold market where jewellery demand peaks during the Tamil wedding season' },
+      { slug: 'bangalore', name: 'Bangalore', context: 'Karnataka\'s tech capital with strong retail gold demand and multiple MMTC outlets' },
+      { slug: 'kolkata', name: 'Kolkata', context: 'home to Bowbazar, Eastern India\'s oldest and largest jewellery district' },
+      { slug: 'hyderabad', name: 'Hyderabad', context: 'known for Laad Bazaar and Pot Market, Telangana\'s traditional gold trading centres' },
+      { slug: 'ahmedabad', name: 'Ahmedabad', context: 'Gujarat\'s commercial capital and a major centre for gold jewellery manufacturing' },
+      { slug: 'jaipur', name: 'Jaipur', context: 'Rajasthan\'s Pink City, renowned for traditional Kundan and Meenakari gold jewellery' },
+      { slug: 'pune', name: 'Pune', context: 'Maharashtra\'s second-largest gold market after Mumbai with strong wedding-season demand' },
+      { slug: 'lucknow', name: 'Lucknow', context: 'Uttar Pradesh\'s capital and a traditional market for gold and Chikan jewellery' },
+      { slug: 'kochi', name: 'Kochi', context: 'Kerala\'s commercial hub where gold demand is among the highest per capita in India' },
+      { slug: 'coimbatore', name: 'Coimbatore', context: 'a leading South Indian gold retail centre with high per-capita jewellery ownership' },
+    ],
   },
   {
     code: 'AE', slug: 'united-arab-emirates', name: 'United Arab Emirates', currency: 'AED', symbol: 'د.إ', flag: '🇦🇪',
@@ -66,6 +88,11 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 5, vatGst: 5 },
     },
     taxNote: 'The UAE applies 5% import duty and 5% VAT on all precious metals. Dubai\'s Gold Souk is one of the world\'s largest retail gold markets, with relatively low taxes compared to India or Europe.',
+    cities: [
+      { slug: 'dubai', name: 'Dubai', context: 'home to the Gold Souk in Deira, one of the world\'s largest retail gold markets by volume' },
+      { slug: 'abu-dhabi', name: 'Abu Dhabi', context: 'the UAE capital with growing gold retail demand and the Madinat Zayed gold centre' },
+      { slug: 'sharjah', name: 'Sharjah', context: 'the Gold Souk in Sharjah\'s Blue Souk offers competitive prices alongside Dubai' },
+    ],
   },
   {
     code: 'US', slug: 'united-states', name: 'United States', currency: 'USD', symbol: '$', flag: '🇺🇸',
@@ -77,6 +104,13 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 6 },
     },
     taxNote: 'The US charges no federal import duty on precious metals. Sales tax (shown here at the average 6%) varies by state — many states fully exempt investment-grade bullion.',
+    cities: [
+      { slug: 'new-york', name: 'New York', context: 'home to the COMEX exchange and the Federal Reserve Bank gold vault, the centre of global gold trading' },
+      { slug: 'los-angeles', name: 'Los Angeles', context: 'California\'s largest bullion market with numerous dealers along the Jewelry District downtown' },
+      { slug: 'chicago', name: 'Chicago', context: 'home to the CME Group that operates COMEX gold and silver futures' },
+      { slug: 'houston', name: 'Houston', context: 'Texas\'s largest city where investment-grade bullion is sales-tax exempt' },
+      { slug: 'dallas', name: 'Dallas', context: 'a major Texas bullion hub where gold and silver purchases are exempt from state sales tax' },
+    ],
   },
   {
     code: 'GB', slug: 'united-kingdom', name: 'United Kingdom', currency: 'GBP', symbol: '£', flag: '🇬🇧',
@@ -88,6 +122,11 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 20 },
     },
     taxNote: 'The UK charges 20% VAT on silver, platinum, and palladium. Investment gold coins and bars meeting HMRC criteria are VAT-exempt.',
+    cities: [
+      { slug: 'london', name: 'London', context: 'home to the LBMA that sets the global gold price benchmark twice daily' },
+      { slug: 'birmingham', name: 'Birmingham', context: 'the Jewellery Quarter is the UK\'s historic centre of gold manufacturing and hallmarking' },
+      { slug: 'manchester', name: 'Manchester', context: 'Northern England\'s largest bullion retail market' },
+    ],
   },
   {
     code: 'DE', slug: 'germany', name: 'Germany', currency: 'EUR', symbol: '€', flag: '🇩🇪',
@@ -99,6 +138,11 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 19 },
     },
     taxNote: 'Germany charges 19% VAT on silver, platinum, and palladium. EU investment gold of 99.5%+ purity is VAT-exempt under EU Directive 1998/80/EC.',
+    cities: [
+      { slug: 'frankfurt', name: 'Frankfurt', context: 'Germany\'s financial capital and home to the Deutsche Börse commodities exchange' },
+      { slug: 'munich', name: 'Munich', context: 'Bavaria\'s capital with a strong tradition of gold investment and coin collecting' },
+      { slug: 'berlin', name: 'Berlin', context: 'Germany\'s capital with growing retail bullion demand' },
+    ],
   },
   {
     code: 'CA', slug: 'canada', name: 'Canada', currency: 'CAD', symbol: 'C$', flag: '🇨🇦',
@@ -110,6 +154,10 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 0 },
     },
     taxNote: 'Canada exempts investment-grade precious metals from GST/HST with no import duties — one of the most tax-efficient bullion markets globally.',
+    cities: [
+      { slug: 'toronto', name: 'Toronto', context: 'Canada\'s financial capital and home to the Toronto Stock Exchange' },
+      { slug: 'vancouver', name: 'Vancouver', context: 'a gateway for Pacific gold trade and home to many mining company headquarters' },
+    ],
   },
   {
     code: 'AU', slug: 'australia', name: 'Australia', currency: 'AUD', symbol: 'A$', flag: '🇦🇺',
@@ -121,6 +169,11 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 0 },
     },
     taxNote: 'Australia exempts investment-grade precious metals from GST and import duties. The Perth Mint is one of the world\'s largest gold refineries.',
+    cities: [
+      { slug: 'sydney', name: 'Sydney', context: 'Australia\'s financial centre and largest bullion retail market' },
+      { slug: 'melbourne', name: 'Melbourne', context: 'home to the ABC Refinery and a strong coin-collecting community' },
+      { slug: 'perth', name: 'Perth', context: 'home to the Perth Mint, one of the world\'s largest and oldest gold refineries' },
+    ],
   },
   {
     code: 'JP', slug: 'japan', name: 'Japan', currency: 'JPY', symbol: '¥', flag: '🇯🇵',
@@ -132,6 +185,10 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 10 },
     },
     taxNote: 'Japan charges 10% consumption tax on all precious metals with no import duty. The Tokyo Commodity Exchange (TOCOM) is the main price reference.',
+    cities: [
+      { slug: 'tokyo', name: 'Tokyo', context: 'home to the Tokyo Commodity Exchange (TOCOM), Japan\'s primary gold futures market' },
+      { slug: 'osaka', name: 'Osaka', context: 'Japan\'s second-largest gold market with a long history of precious metals trading' },
+    ],
   },
   {
     code: 'CH', slug: 'switzerland', name: 'Switzerland', currency: 'CHF', symbol: 'CHF', flag: '🇨🇭',
@@ -143,6 +200,10 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 8.1 },
     },
     taxNote: 'Switzerland charges 8.1% VAT on precious metals with no import duty. It is home to major refineries including PAMP and Valcambi.',
+    cities: [
+      { slug: 'zurich', name: 'Zurich', context: 'Switzerland\'s financial centre and a global hub for gold refining, storage, and trading' },
+      { slug: 'geneva', name: 'Geneva', context: 'home to private banking vaults and a centre for physical gold custody services' },
+    ],
   },
   {
     code: 'CN', slug: 'china', name: 'China', currency: 'CNY', symbol: '元', flag: '🇨🇳',
@@ -154,6 +215,11 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 13 },
     },
     taxNote: 'China charges 13% VAT on precious metals. The Shanghai Gold Exchange (SGE) is the world\'s largest physical gold exchange by volume.',
+    cities: [
+      { slug: 'shanghai', name: 'Shanghai', context: 'home to the Shanghai Gold Exchange (SGE), the world\'s largest physical gold exchange' },
+      { slug: 'beijing', name: 'Beijing', context: 'China\'s capital with strong retail gold demand during Spring Festival and wedding seasons' },
+      { slug: 'shenzhen', name: 'Shenzhen', context: 'China\'s gold jewellery manufacturing capital, producing over 70% of the country\'s gold jewellery' },
+    ],
   },
   {
     code: 'RU', slug: 'russia', name: 'Russia', currency: 'RUB', symbol: '₽', flag: '🇷🇺',
@@ -176,6 +242,9 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 7.5, vatGst: 11 },
     },
     taxNote: 'Indonesia charges 7.5% import duty and 11% VAT on precious metals. Antam (PT Aneka Tambang) is the state-owned gold producer and refiner.',
+    cities: [
+      { slug: 'jakarta', name: 'Jakarta', context: 'Indonesia\'s capital and largest gold retail market, home to the Antam refinery' },
+    ],
   },
   {
     code: 'ZA', slug: 'south-africa', name: 'South Africa', currency: 'ZAR', symbol: 'R', flag: '🇿🇦',
@@ -187,6 +256,10 @@ const COUNTRIES: Country[] = [
       palladium: { importDuty: 0, vatGst: 15 },
     },
     taxNote: 'South Africa charges 15% VAT on precious metals. It is the world\'s largest producer of platinum-group metals and historically the largest gold producer.',
+    cities: [
+      { slug: 'johannesburg', name: 'Johannesburg', context: 'South Africa\'s gold capital, built on the Witwatersrand gold reef and home to the Rand Refinery' },
+      { slug: 'cape-town', name: 'Cape Town', context: 'the Western Cape\'s primary bullion retail market and home to the South African Mint' },
+    ],
   },
 ];
 
@@ -490,6 +563,11 @@ function buildMetalPage(country: Country, metal: Metal): string {
           ${otherMetals}
         </ul>
 
+        ${(country.cities ?? []).length > 0 ? `<h2>${metalLabel} Price by City in ${country.name}</h2>
+        <ul>
+          ${(country.cities ?? []).map(c => `<li><a href="/${country.slug}/${metal}/${c.slug}/">${metalLabel} Price in ${c.name}</a></li>`).join('\n          ')}
+        </ul>` : ''}
+
         <h2>${metalLabel} Price in Other Countries</h2>
         <ul>
           ${otherCountries}
@@ -557,6 +635,158 @@ function buildMetalPage(country: Country, metal: Metal): string {
   }
 
   return html;
+}
+
+// ── Helper: replace #root content in SPA template ───────────────────────────
+
+function replaceRootContent(html: string, newContent: string): string {
+  const rootOpen = html.indexOf('<div id="root">');
+  if (rootOpen === -1) return html;
+  const afterOpen = rootOpen + '<div id="root">'.length;
+  let depth = 1;
+  let i = afterOpen;
+  while (i < html.length && depth > 0) {
+    const nextOpen = html.indexOf('<div', i);
+    const nextClose = html.indexOf('</div>', i);
+    if (nextClose === -1) break;
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      i = nextOpen + 4;
+    } else {
+      depth--;
+      if (depth === 0) {
+        return html.substring(0, afterOpen) + newContent + '\n    ' + html.substring(nextClose);
+      }
+      i = nextClose + 6;
+    }
+  }
+  return html;
+}
+
+/** Replace SEO meta tags in an SPA template clone. */
+function patchSpaTemplate(opts: {
+  title: string; description: string; canonicalPath: string; jsonLdBlock: string; noscriptContent: string;
+}): string {
+  let html = SPA_TEMPLATE;
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(opts.title)}</title>`);
+  html = html.replace(/<meta name="title"[^>]*>/, `<meta name="title" content="${escapeHtml(opts.title)}" />`);
+  html = html.replace(/<meta\s+name="description"[\s\S]*?>/, `<meta name="description" content="${escapeHtml(opts.description)}" />`);
+  html = html.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${DOMAIN}${opts.canonicalPath}" />`);
+  html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${DOMAIN}${opts.canonicalPath}" />`);
+  html = html.replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(opts.title)}" />`);
+  html = html.replace(/<meta\s+property="og:description"[\s\S]*?>/, `<meta property="og:description" content="${escapeHtml(opts.description)}" />`);
+  html = html.replace(/<meta property="twitter:url"[^>]*>/, `<meta property="twitter:url" content="${DOMAIN}${opts.canonicalPath}" />`);
+  html = html.replace(/<meta property="twitter:title"[^>]*>/, `<meta property="twitter:title" content="${escapeHtml(opts.title)}" />`);
+  html = html.replace(/<meta\s+property="twitter:description"[\s\S]*?>/, `<meta property="twitter:description" content="${escapeHtml(opts.description)}" />`);
+  html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  html = html.replace('</head>', `${opts.jsonLdBlock}\n</head>`);
+  html = replaceRootContent(html, opts.noscriptContent);
+  return html;
+}
+
+// ── City+Metal page (SPA shell) ─────────────────────────────────────────────
+
+function buildCityPage(country: Country, metal: Metal, city: City): string {
+  const p = calcPrice(country, metal);
+  const metalLabel = METAL_LABEL[metal];
+  const metalSym = METAL_SYMBOL[metal];
+  const unitLabel = country.displayUnitLabel;
+  const sym = country.symbol;
+  const canonicalPath = `/${country.slug}/${metal}/${city.slug}/`;
+
+  const title = `${metalLabel} Price in ${city.name} Today | ${sym}${fmt(p.totalPerUnit, country.currency)}/${unitLabel} | MetalPrices.Online`;
+  const description = `${country.flag} Live ${metalLabel.toLowerCase()} price in ${city.name}, ${country.name}: ${sym}${fmt(p.spotPerUnit, country.currency)}/${unitLabel} spot + ${p.importDutyPct}% duty + ${p.vatGstPct}% VAT/GST = ${sym}${fmt(p.totalPerUnit, country.currency)}/${unitLabel}. ${city.name} is ${city.context}.`;
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
+      { '@type': 'ListItem', position: 2, name: country.name, item: `${DOMAIN}/${country.slug}/` },
+      { '@type': 'ListItem', position: 3, name: `${metalLabel} in ${country.name}`, item: `${DOMAIN}/${country.slug}/${metal}/` },
+      { '@type': 'ListItem', position: 4, name: city.name, item: `${DOMAIN}${canonicalPath}` },
+    ],
+  };
+
+  const financialLd = {
+    '@context': 'https://schema.org',
+    '@type': 'FinancialProduct',
+    name: `${metalLabel} Spot Price in ${city.name}, ${country.name}`,
+    description: `Live ${metalLabel.toLowerCase()} (${metalSym}) spot price in ${city.name} in ${country.currency} with ${country.name} import duty and VAT breakdown`,
+    url: `${DOMAIN}${canonicalPath}`,
+    areaServed: { '@type': 'City', name: city.name, containedInPlace: { '@type': 'Country', name: country.name } },
+    provider: { '@type': 'Organization', name: 'MetalPrices.Online', url: DOMAIN },
+  };
+
+  const jsonLdBlock = [breadcrumbLd, financialLd]
+    .map(ld => `<script type="application/ld+json">${JSON.stringify(ld, null, 2)}</script>`)
+    .join('\n');
+
+  // Other cities in this country for this metal
+  const otherCities = (country.cities ?? []).filter(c => c.slug !== city.slug)
+    .map(c => `<li><a href="/${country.slug}/${metal}/${c.slug}/">${metalLabel} Price in ${c.name}</a></li>`)
+    .join('\n          ');
+
+  // Other metals in this city
+  const otherMetals = METALS.filter(m => m !== metal)
+    .map(m => `<li><a href="/${country.slug}/${m}/${city.slug}/">${METAL_LABEL[m]} Price in ${city.name}</a></li>`)
+    .join('\n          ');
+
+  // Cross-links to popular country+metal pages
+  const popularCountryLinks = COUNTRIES.filter(c => c.slug !== country.slug).slice(0, 4)
+    .map(c => {
+      const cp = calcPrice(c, metal);
+      return `<li><a href="/${c.slug}/${metal}/">${c.flag} ${metalLabel} in ${c.name} — ${c.symbol}${fmt(cp.totalPerUnit, c.currency)}/${c.displayUnitLabel}</a></li>`;
+    })
+    .join('\n          ');
+
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px;">
+        <h1>${metalLabel} Price in ${city.name} Today</h1>
+        <p>
+          ${country.flag} Live ${metalLabel.toLowerCase()} (${metalSym}) price in ${city.name}, ${country.name}
+          — ${city.context}. Prices include ${country.name}'s import duty and VAT/GST.
+        </p>
+
+        <h2>${metalLabel} Price Breakdown in ${city.name} (${country.currency})</h2>
+        <ul>
+          <li>International Spot Price: $${fmt(p.spotUSD, 'USD')} per troy ounce</li>
+          <li>Spot in ${country.currency}: ${sym}${fmt(p.spotPerUnit, country.currency)} per ${unitLabel}</li>
+          <li>Import Duty (${p.importDutyPct}%): +${sym}${fmt(p.importDutyAmt, country.currency)}</li>
+          <li>VAT/GST (${p.vatGstPct}%): +${sym}${fmt(p.vatAmt, country.currency)}</li>
+          <li><strong>Total Duty-Paid Price: ${sym}${fmt(p.totalPerUnit, country.currency)} per ${unitLabel}</strong></li>
+        </ul>
+
+        <p>${country.taxNote}</p>
+
+        <h2>About ${metalLabel} in ${city.name}</h2>
+        <p>
+          ${city.name} is ${city.context}. The ${metalLabel.toLowerCase()} price in ${city.name} follows
+          ${country.name}'s national rate plus local dealer premiums. The price shown above is the
+          calculated landed cost based on the international spot price converted to ${country.currency}
+          with ${country.name}'s import duty (${p.importDutyPct}%) and VAT/GST (${p.vatGstPct}%) applied.
+        </p>
+
+        ${otherCities ? `<h2>${metalLabel} in Other ${country.name} Cities</h2>
+        <ul>
+          ${otherCities}
+        </ul>` : ''}
+
+        <h2>Other Metals in ${city.name}</h2>
+        <ul>
+          ${otherMetals}
+        </ul>
+
+        <h2>${metalLabel} Price in Other Countries</h2>
+        <ul>
+          ${popularCountryLinks}
+        </ul>
+
+        <p><a href="/${country.slug}/${metal}/">${metalLabel} Price in ${country.name} — National Overview</a></p>
+        <p><a href="/">Back to MetalPrices.online — Live Precious Metal Prices</a></p>
+      </div>`;
+
+  return patchSpaTemplate({ title, description, canonicalPath, jsonLdBlock, noscriptContent });
 }
 
 // ── Country overview page ─────────────────────────────────────────────────────
@@ -887,6 +1117,13 @@ for (const country of COUNTRIES) {
     write(path.join(DIST, country.slug, metal, 'index.html'), buildMetalPage(country, metal));
     sitemapUrls.push({ loc: `${DOMAIN}/${country.slug}/${metal}/`, priority: '0.8', changefreq: 'daily' });
     pageCount++;
+
+    // City-level pages
+    for (const city of country.cities ?? []) {
+      write(path.join(DIST, country.slug, metal, city.slug, 'index.html'), buildCityPage(country, metal, city));
+      sitemapUrls.push({ loc: `${DOMAIN}/${country.slug}/${metal}/${city.slug}/`, priority: '0.7', changefreq: 'daily' });
+      pageCount++;
+    }
   }
 }
 

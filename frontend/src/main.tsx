@@ -23,6 +23,7 @@ createRoot(document.getElementById('root')!).render(
         <Route element={<App />}>
           <Route index element={<HomePage />} />
           <Route path=":country/:metal" element={<Suspense fallback={<RouteSpinner />}><MetalPage /></Suspense>} />
+          <Route path=":country/:metal/:city" element={<Suspense fallback={<RouteSpinner />}><MetalPage /></Suspense>} />
           <Route path="blogs" element={<Suspense fallback={<RouteSpinner />}><BlogsPage /></Suspense>} />
           <Route path="tips" element={<Suspense fallback={<RouteSpinner />}><TipsPage /></Suspense>} />
         </Route>

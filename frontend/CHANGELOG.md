@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.2.0...metalprices-frontend-v0.3.0) (2026-10-08)
+
+
+### Features
+
+* update index.html for improved SEO and user experience; add caching headers ([47a6530](https://github.com/akash-reddy-k/metalpricetracker/commit/47a653050f84640b0606321cd617e715ae1389a3))
+* update index.html for improved SEO and user experience; add caching headers ([83f66a6](https://github.com/akash-reddy-k/metalpricetracker/commit/83f66a69d6af093854835f5748536ae2b87b8e60))
+
+
+### Bug Fixes
+
+* resolve SEO bugs preventing Google indexing ([945801e](https://github.com/akash-reddy-k/metalpricetracker/commit/945801e811a0da6a1a1b1f81199a30394790ea7b))
+* resolve SEO bugs preventing Google indexing ([9f0068c](https://github.com/akash-reddy-k/metalpricetracker/commit/9f0068c4d48c60a696ba03f1d1ce257773e498ce))
+
 ## [0.2.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.1.1...metalprices-frontend-v0.2.0) (2026-09-01)
 
 

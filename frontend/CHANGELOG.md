@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.3.0...metalprices-frontend-v0.3.1) (2026-10-08)
+
+
+### Bug Fixes
+
+* improve TradingView chart UX — currency conversion, reliable reload, inner page nav ([d43fefb](https://github.com/akash-reddy-k/metalpricetracker/commit/d43fefb7ae1aa39986f8b60d4823a414449b03aa))
+
+
+### Performance
+
+* remove TradingView chart from homepage to improve load time and SEO ([def164a](https://github.com/akash-reddy-k/metalpricetracker/commit/def164a9bd9031debff11a7a6565858ae4795ac5))
+
 ## [0.3.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.2.0...metalprices-frontend-v0.3.0) (2026-10-08)
 
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { WeeklyReports } from '../components/WeeklyReports';
 
-const BlogsPage: React.FC = () => {
+const NewsPage: React.FC = () => {
   return (
     <main className="dashboard-grid">
       <WeeklyReports />
@@ -9,4 +9,4 @@ const BlogsPage: React.FC = () => {
   );
 };
 
-export default BlogsPage;
+export default NewsPage;

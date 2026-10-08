@@ -5,7 +5,7 @@ import { FALLBACK_SPOT_PRICES } from './services/priceEngine';
 import { EXCHANGE_RATES, COUNTRIES } from './data/countries';
 import { useLiveQuotes } from './hooks/useLiveQuotes';
 import { METAL_TICKERS, TICKER_TO_CURRENCY } from './services/api';
-import { Coins, ShieldCheck, Home, BookOpen, Lightbulb } from 'lucide-react';
+import { Coins, ShieldCheck, Home, Newspaper, Lightbulb } from 'lucide-react';
 import './index.css';
 
 function App() {
@@ -163,9 +163,9 @@ function App() {
             <Home size={15} />
             <span>Home</span>
           </NavLink>
-          <NavLink to="/blogs" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
-            <BookOpen size={15} />
-            <span>Blogs</span>
+          <NavLink to="/news" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
+            <Newspaper size={15} />
+            <span>News</span>
           </NavLink>
           <NavLink to="/tips" className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}>
             <Lightbulb size={15} />

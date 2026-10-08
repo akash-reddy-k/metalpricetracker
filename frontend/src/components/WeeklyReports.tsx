@@ -1,57 +1,30 @@
-import React, { useState } from 'react';
-import { WEEKLY_REPORTS } from '../data/content';
-import { Newspaper, ChevronDown } from 'lucide-react';
-
-const formatDate = (iso: string) =>
-  new Date(iso).toLocaleDateString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Newspaper, ArrowRight } from 'lucide-react';
+import { newsArticles, newsPath, formatNewsDate } from '../data/news';
 
 export const WeeklyReports: React.FC = () => {
-  // Newest report is expanded by default; the rest collapse to their summary.
-  const [openSlug, setOpenSlug] = useState<string | null>(WEEKLY_REPORTS[0]?.slug ?? null);
-
   return (
     <div id="weekly-reports" className="blog-panel card-panel">
       <div className="panel-title">
         <Newspaper size={20} className="glow-gold-text" />
-        <h2>Weekly Market Reports</h2>
+        <h2>Weekly Market News</h2>
       </div>
       <p className="panel-subtitle">
-        Our take on what moved gold, silver, platinum, and palladium each week.
+        Automated weekly analysis of gold, silver, platinum, and palladium price movements.
       </p>
 
-      <div className="blog-list">
-        {WEEKLY_REPORTS.map((report) => {
-          const isOpen = openSlug === report.slug;
-          return (
-            <article key={report.slug} className={`blog-item ${isOpen ? 'open' : ''}`}>
-              <button
-                className="blog-header"
-                onClick={() => setOpenSlug(isOpen ? null : report.slug)}
-                aria-expanded={isOpen}
-              >
-                <div className="blog-header-text">
-                  <time className="blog-date">{formatDate(report.date)}</time>
-                  <h3>{report.title}</h3>
-                </div>
-                <ChevronDown size={18} className={`blog-chevron ${isOpen ? 'rotated' : ''}`} />
-              </button>
-
-              {isOpen ? (
-                <div className="blog-body">
-                  {report.paragraphs.map((para, i) => (
-                    <p key={i}>{para}</p>
-                  ))}
-                </div>
-              ) : (
-                <p className="blog-summary">{report.summary}</p>
-              )}
-            </article>
-          );
-        })}
+      <div className="news-list">
+        {newsArticles.map((article) => (
+          <Link key={article.slug} to={newsPath(article)} className="news-card">
+            <time className="blog-date">{formatNewsDate(article.date)}</time>
+            <h3>{article.title}</h3>
+            <p className="news-card-summary">{article.summary}</p>
+            <span className="news-card-readmore">
+              Read full report <ArrowRight size={14} />
+            </span>
+          </Link>
+        ))}
       </div>
     </div>
   );

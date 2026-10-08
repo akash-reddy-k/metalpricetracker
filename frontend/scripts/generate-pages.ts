@@ -361,15 +361,17 @@ function head(title: string, description: string, canonicalPath: string, jsonLd:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <title>${title}</title>
 <meta name="description" content="${description}">
-<meta name="robots" content="index, follow">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large">
 <link rel="canonical" href="${DOMAIN}${canonicalPath}">
-<meta property="og:type" content="article">
+<meta property="og:type" content="website">
 <meta property="og:url" content="${DOMAIN}${canonicalPath}">
 <meta property="og:title" content="${title}">
 <meta property="og:description" content="${description}">
 <meta property="og:image" content="${DOMAIN}/og-image.png">
+<meta property="og:site_name" content="MetalPrices.online">
 <meta property="twitter:card" content="summary_large_image">
 <meta property="twitter:title" content="${title}">
 <meta property="twitter:description" content="${description}">
@@ -385,8 +387,8 @@ function siteHeader(): string {
   <a href="${DOMAIN}" style="color:#e2e8f0;font-weight:700;font-size:16px;text-decoration:none;">MetalPrices.Online</a>
   <nav style="display:flex;gap:6px;align-items:center;">
     <a href="${DOMAIN}/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;background:rgba(255,255,255,0.06);">Home</a>
-    <a href="${DOMAIN}/blogs" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Blogs</a>
-    <a href="${DOMAIN}/tips" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Tips</a>
+    <a href="${DOMAIN}/blogs/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Blogs</a>
+    <a href="${DOMAIN}/tips/" style="color:#94a3b8;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:6px;">Tips</a>
   </nav>
 </div>`;
 }
@@ -455,12 +457,12 @@ function buildMetalPage(country: Country, metal: Metal): string {
 
   // Build route-specific noscript content for SEO crawlers
   const otherMetals = METALS.filter(m => m !== metal)
-    .map(m => `<li><a href="/${country.slug}/${m}">${METAL_LABEL[m]} Price in ${country.name}</a></li>`)
+    .map(m => `<li><a href="/${country.slug}/${m}/">${METAL_LABEL[m]} Price in ${country.name}</a></li>`)
     .join('\n          ');
   const otherCountries = COUNTRIES.filter(c => c.slug !== country.slug).slice(0, 6)
     .map(c => {
       const cp = calcPrice(c, metal);
-      return `<li><a href="/${c.slug}/${metal}">${c.flag} ${metalLabel} in ${c.name} — ${c.symbol}${fmt(cp.totalPerUnit, c.currency)}/${c.displayUnitLabel}</a></li>`;
+      return `<li><a href="/${c.slug}/${metal}/">${c.flag} ${metalLabel} in ${c.name} — ${c.symbol}${fmt(cp.totalPerUnit, c.currency)}/${c.displayUnitLabel}</a></li>`;
     })
     .join('\n          ');
 
@@ -529,7 +531,30 @@ function buildMetalPage(country: Country, metal: Metal): string {
   // Replace static HTML inside <div id="root"> with route-specific SEO content.
   // React's createRoot().render() will replace this when the SPA mounts,
   // but Googlebot sees real content on its first (HTML-only) crawl pass.
-  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root">${noscriptContent}\n    </div>`);
+  // Use a greedy match with anchor to capture the entire #root div including nested divs.
+  const rootOpen = html.indexOf('<div id="root">');
+  if (rootOpen !== -1) {
+    // Find the matching closing </div> by counting nesting depth
+    const afterOpen = rootOpen + '<div id="root">'.length;
+    let depth = 1;
+    let i = afterOpen;
+    while (i < html.length && depth > 0) {
+      const nextOpen = html.indexOf('<div', i);
+      const nextClose = html.indexOf('</div>', i);
+      if (nextClose === -1) break;
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        i = nextOpen + 4;
+      } else {
+        depth--;
+        if (depth === 0) {
+          html = html.substring(0, afterOpen) + noscriptContent + '\n    ' + html.substring(nextClose);
+          break;
+        }
+        i = nextClose + 6;
+      }
+    }
+  }
 
   return html;
 }
@@ -554,7 +579,7 @@ function buildCountryPage(country: Country): string {
 
   const cards = allPrices.map(({ metal, p }) => {
     const color = METAL_COLOR[metal];
-    return `<a href="${DOMAIN}/${country.slug}/${metal}" style="text-decoration:none;">
+    return `<a href="${DOMAIN}/${country.slug}/${metal}/" style="text-decoration:none;">
       <div class="country-card" style="border-color:${color}22;">
         <div class="flag" style="font-size:26px;">${METAL_LABEL[metal][0]}</div>
         <div class="country-name" style="color:${color}">${METAL_LABEL[metal]}</div>
@@ -566,7 +591,7 @@ function buildCountryPage(country: Country): string {
 
   const breakdown = allPrices.map(({ metal, p }) =>
     `<tr>
-      <td><a href="${DOMAIN}/${country.slug}/${metal}" style="color:${METAL_COLOR[metal]}">${METAL_LABEL[metal]}</a></td>
+      <td><a href="${DOMAIN}/${country.slug}/${metal}/" style="color:${METAL_COLOR[metal]}">${METAL_LABEL[metal]}</a></td>
       <td>$${fmt(p.spotUSD, 'USD')}/oz</td>
       <td>${country.symbol}${fmt(p.spotPerUnit, country.currency)}</td>
       <td>${p.importDutyPct}%</td>
@@ -577,7 +602,7 @@ function buildCountryPage(country: Country): string {
 
   const countryLinks = COUNTRIES
     .filter(c => c.slug !== country.slug)
-    .map(c => `<a href="${DOMAIN}/${c.slug}" class="pill">${c.flag} ${c.name}</a>`)
+    .map(c => `<a href="${DOMAIN}/${c.slug}/" class="pill">${c.flag} ${c.name}</a>`)
     .join('');
 
   return `${head(title, description, canonicalPath, [breadcrumbLd])}
@@ -664,6 +689,177 @@ function escapeHtml(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// ── Blogs page (SPA shell) ──────────────────────────────────────────────────
+
+function buildBlogsPage(): string {
+  const title = 'Weekly Precious Metals Market Reports | MetalPrices.Online';
+  const description = 'Weekly market analysis and reports covering gold, silver, platinum, and palladium price movements, central bank policy, and investment insights.';
+  const canonicalPath = '/blogs/';
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
+      { '@type': 'ListItem', position: 2, name: 'Blogs', item: `${DOMAIN}${canonicalPath}` },
+    ],
+  };
+
+  const jsonLdBlock = `<script type="application/ld+json">${JSON.stringify(breadcrumbLd, null, 2)}</script>`;
+
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #e2e8f0;">
+        <h1>Weekly Precious Metals Market Reports</h1>
+        <p style="color: #94a3b8;">Our take on what moved gold, silver, platinum, and palladium each week.</p>
+
+        <h2>Gold holds firm as rate-cut bets build — Aug 24, 2026</h2>
+        <p style="color: #94a3b8;">Gold consolidated near record territory this week as softer inflation data strengthened expectations of a rate cut, while silver outperformed on industrial demand.</p>
+
+        <h2>Dollar strength caps precious metals — Aug 17, 2026</h2>
+        <p style="color: #94a3b8;">A firmer dollar and rising yields capped gains across the complex, though physical demand in Asia provided a floor under gold.</p>
+
+        <h2>Explore Prices</h2>
+        <ul>
+          <li><a href="/" style="color: #60a5fa;">Live Precious Metal Prices</a></li>
+          <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India</a></li>
+          <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
+          <li><a href="/tips/" style="color: #60a5fa;">Investment Tips &amp; Guides</a></li>
+        </ul>
+      </div>`;
+
+  let html = SPA_TEMPLATE;
+
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
+  html = html.replace(/<meta name="title"[^>]*>/, `<meta name="title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+name="description"[\s\S]*?>/, `<meta name="description" content="${escapeHtml(description)}" />`);
+  html = html.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="og:description"[\s\S]*?>/, `<meta property="og:description" content="${escapeHtml(description)}" />`);
+  html = html.replace(/<meta property="twitter:url"[^>]*>/, `<meta property="twitter:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="twitter:title"[^>]*>/, `<meta property="twitter:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="twitter:description"[\s\S]*?>/, `<meta property="twitter:description" content="${escapeHtml(description)}" />`);
+
+  html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  html = html.replace('</head>', `${jsonLdBlock}\n</head>`);
+
+  // Replace root div content
+  const rootOpen = html.indexOf('<div id="root">');
+  if (rootOpen !== -1) {
+    const afterOpen = rootOpen + '<div id="root">'.length;
+    let depth = 1;
+    let i = afterOpen;
+    while (i < html.length && depth > 0) {
+      const nextOpen = html.indexOf('<div', i);
+      const nextClose = html.indexOf('</div>', i);
+      if (nextClose === -1) break;
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        i = nextOpen + 4;
+      } else {
+        depth--;
+        if (depth === 0) {
+          html = html.substring(0, afterOpen) + noscriptContent + '\n    ' + html.substring(nextClose);
+          break;
+        }
+        i = nextClose + 6;
+      }
+    }
+  }
+
+  return html;
+}
+
+// ── Tips page (SPA shell) ───────────────────────────────────────────────────
+
+function buildTipsPage(): string {
+  const title = 'Precious Metal Investment Tips & Guides | MetalPrices.Online';
+  const description = 'Learn how precious metal investing works: spot vs. local price, purity and karats, bullion vs. jewellery, and dollar-cost averaging strategies for gold, silver, platinum, and palladium.';
+  const canonicalPath = '/tips/';
+
+  const breadcrumbLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: DOMAIN },
+      { '@type': 'ListItem', position: 2, name: 'Investment Tips', item: `${DOMAIN}${canonicalPath}` },
+    ],
+  };
+
+  const jsonLdBlock = `<script type="application/ld+json">${JSON.stringify(breadcrumbLd, null, 2)}</script>`;
+
+  const noscriptContent = `
+      <div style="font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px; color: #e2e8f0;">
+        <h1>How Precious-Metal Investing Works</h1>
+        <p style="color: #94a3b8;">Quick primers on pricing, purity, and strategy before you buy.</p>
+
+        <h2>Spot price is only the starting point</h2>
+        <p style="color: #94a3b8;">The quoted international spot price is the raw metal value. What you actually pay adds import duty, local VAT/GST, and a dealer or minting premium. Always compare the all-in local price, not just spot.</p>
+
+        <h2>Purity changes value proportionally</h2>
+        <p style="color: #94a3b8;">Gold is sold at different finenesses — 24K (99.9%), 22K (91.6%), 18K (75%). A 22K piece is worth roughly 91.6% of the pure-gold value of the same weight, before making charges.</p>
+
+        <h2>Silver is volatile and industrial</h2>
+        <p style="color: #94a3b8;">Silver moves more sharply than gold because half its demand is industrial (electronics, solar). It offers higher upside but larger drawdowns.</p>
+
+        <h2>Bullion vs. jewellery for investment</h2>
+        <p style="color: #94a3b8;">For pure investment exposure, bullion coins and bars minimise premium and, in some countries, qualify for VAT exemption. Jewellery carries fabrication charges you rarely recover on resale.</p>
+
+        <h2>Cost-average, do not time the top</h2>
+        <p style="color: #94a3b8;">Precious metals are a long-horizon hedge against inflation and currency risk. Buying a fixed amount at regular intervals smooths out volatility.</p>
+
+        <h2>Explore Prices</h2>
+        <ul>
+          <li><a href="/" style="color: #60a5fa;">Live Precious Metal Prices</a></li>
+          <li><a href="/india/gold/" style="color: #60a5fa;">Gold Price in India</a></li>
+          <li><a href="/united-states/gold/" style="color: #60a5fa;">Gold Price in USA</a></li>
+          <li><a href="/blogs/" style="color: #60a5fa;">Weekly Market Reports</a></li>
+        </ul>
+      </div>`;
+
+  let html = SPA_TEMPLATE;
+
+  html = html.replace(/<title>[^<]*<\/title>/, `<title>${escapeHtml(title)}</title>`);
+  html = html.replace(/<meta name="title"[^>]*>/, `<meta name="title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+name="description"[\s\S]*?>/, `<meta name="description" content="${escapeHtml(description)}" />`);
+  html = html.replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="og:description"[\s\S]*?>/, `<meta property="og:description" content="${escapeHtml(description)}" />`);
+  html = html.replace(/<meta property="twitter:url"[^>]*>/, `<meta property="twitter:url" content="${DOMAIN}${canonicalPath}" />`);
+  html = html.replace(/<meta property="twitter:title"[^>]*>/, `<meta property="twitter:title" content="${escapeHtml(title)}" />`);
+  html = html.replace(/<meta\s+property="twitter:description"[\s\S]*?>/, `<meta property="twitter:description" content="${escapeHtml(description)}" />`);
+
+  html = html.replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');
+  html = html.replace('</head>', `${jsonLdBlock}\n</head>`);
+
+  // Replace root div content
+  const rootOpen = html.indexOf('<div id="root">');
+  if (rootOpen !== -1) {
+    const afterOpen = rootOpen + '<div id="root">'.length;
+    let depth = 1;
+    let i = afterOpen;
+    while (i < html.length && depth > 0) {
+      const nextOpen = html.indexOf('<div', i);
+      const nextClose = html.indexOf('</div>', i);
+      if (nextClose === -1) break;
+      if (nextOpen !== -1 && nextOpen < nextClose) {
+        depth++;
+        i = nextOpen + 4;
+      } else {
+        depth--;
+        if (depth === 0) {
+          html = html.substring(0, afterOpen) + noscriptContent + '\n    ' + html.substring(nextClose);
+          break;
+        }
+        i = nextClose + 6;
+      }
+    }
+  }
+
+  return html;
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 const sitemapUrls: Array<{ loc: string; priority: string; changefreq: string }> = [
@@ -673,6 +869,12 @@ const sitemapUrls: Array<{ loc: string; priority: string; changefreq: string }> 
 ];
 
 let pageCount = 0;
+
+// Generate Blogs and Tips SPA shell pages
+write(path.join(DIST, 'blogs', 'index.html'), buildBlogsPage());
+pageCount++;
+write(path.join(DIST, 'tips', 'index.html'), buildTipsPage());
+pageCount++;
 
 for (const country of COUNTRIES) {
   // Country overview page

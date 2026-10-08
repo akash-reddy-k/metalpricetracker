@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
 import { getPricePerUnit } from '../services/priceEngine';
 import { COUNTRIES, countrySlug, getMetalImportDuty } from '../data/countries';
-import { Sparkles, Activity } from 'lucide-react';
+import { Sparkles, Activity, ArrowUpRight } from 'lucide-react';
 
 interface LivePriceCardsProps {
   prices: SpotPrices;
@@ -74,11 +74,11 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
   prices,
   selectedCurrency,
   activeMetal,
+  setActiveMetal,
   weightUnit,
   exchangeRates,
   changePercents,
 }) => {
-  const navigate = useNavigate();
   const previousPrices = useRef<SpotPrices | null>(null);
   const [pulseStates, setPulseStates] = useState<Record<MetalType, 'up' | 'down' | null>>({
     gold: null,
@@ -185,7 +185,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
               borderColor: isSelected ? details.color : 'var(--border-color)',
               boxShadow: isSelected ? `0 0 20px ${details.color}25` : 'none',
             }}
-            onClick={() => navigate(`/${countrySlug(currentCountry)}/${metal}/`)}
+            onClick={() => setActiveMetal(metal)}
           >
             <div className="metal-card-header">
               <div>
@@ -381,6 +381,31 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                 ));
               })(weightUnit)}
             </div>
+
+            <Link
+              to={`/${countrySlug(currentCountry)}/${metal}/`}
+              className="metal-card-details-link"
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                marginTop: '12px',
+                padding: '8px 0',
+                borderTop: '1px solid rgba(255, 255, 255, 0.05)',
+                fontSize: '12px',
+                fontWeight: 600,
+                color: details.color,
+                textDecoration: 'none',
+                opacity: 0.8,
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+            >
+              View {details.name} Prices <ArrowUpRight size={14} />
+            </Link>
 
             {pulse && (
               <div className={`pulse-indicator ${pulse}`}>

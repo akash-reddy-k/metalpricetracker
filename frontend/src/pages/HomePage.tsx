@@ -4,8 +4,7 @@ import type { AppOutletContext } from '../types/metals';
 import { LivePriceCards } from '../components/LivePriceCards';
 import { Calculator } from '../components/Calculator';
 
-// AnalyticsChart is the heaviest component (708 lines, charts, history hooks).
-// Lazy-load it so the above-the-fold price cards + calculator paint first.
+// Lazy-load heavy chart component so above-the-fold content paints first.
 const AnalyticsChart = lazy(() => import('../components/AnalyticsChart'));
 
 export const HomePage: React.FC = () => {

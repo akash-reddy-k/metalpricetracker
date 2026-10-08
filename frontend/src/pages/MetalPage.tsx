@@ -1,9 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, lazy, Suspense } from 'react';
 import { useParams, useOutletContext, Navigate } from 'react-router-dom';
 import type { MetalType, AppOutletContext } from '../types/metals';
 import { findCountryBySlug } from '../data/countries';
 import { MetalPurityDetails } from '../components/MetalPurityDetails';
 import { Calculator } from '../components/Calculator';
+
+const TradingViewChart = lazy(() => import('../components/TradingViewChart'));
+
+const ChartFallback = () => (
+  <div style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+    Loading chart...
+  </div>
+);
 
 const VALID_METALS: MetalType[] = ['gold', 'silver', 'platinum', 'palladium'];
 
@@ -40,6 +48,10 @@ const MetalPage: React.FC = () => {
         weightUnit={ctx.weightUnit}
         exchangeRates={ctx.exchangeRates}
       />
+
+      <Suspense fallback={<ChartFallback />}>
+        <TradingViewChart activeMetal={metal} selectedCurrency={ctx.selectedCurrency} />
+      </Suspense>
 
       <Calculator
         activeMetal={metal}

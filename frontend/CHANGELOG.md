@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.0...metalprices-frontend-v0.4.1) (2026-10-09)
+
+
+### Bug Fixes
+
+* bust poisoned asset hashes with a cache-revision salt ([df182c6](https://github.com/akash-reddy-k/metalpricetracker/commit/df182c654dd7c44791bddbdbd44a479d94a6e3e8))
+* bust poisoned asset hashes with a cache-revision salt ([e5f0fc0](https://github.com/akash-reddy-k/metalpricetracker/commit/e5f0fc07f8a3336f6d83b2a0e83be5905180ac0c))
+
 ## [0.4.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.3.1...metalprices-frontend-v0.4.0) (2026-10-08)
 
 

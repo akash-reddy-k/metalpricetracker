@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.3...metalprices-frontend-v0.5.0) (2026-10-12)
+
+
+### Features
+
+* let a later Gemini run upgrade a template news article ([95284bd](https://github.com/akash-reddy-k/metalpricetracker/commit/95284bd0c8aabd2d6a959b962cd3679e2fcd4fbb))
+
+
+### Improvements
+
+* store news as one timestamped file per article ([5a874de](https://github.com/akash-reddy-k/metalpricetracker/commit/5a874de464e1adf8f750acc5d6fe15ed697e7c93))
+
 ## [0.4.3](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.2...metalprices-frontend-v0.4.3) (2026-10-12)
 
 

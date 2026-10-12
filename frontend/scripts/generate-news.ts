@@ -59,6 +59,10 @@ interface NewsArticle {
     us10y: number;
     crude: number;
   };
+  /** Which path produced this article. Lets a later Gemini success upgrade an
+   *  article that previously fell back to the deterministic template. Optional
+   *  so older articles written before this field existed still parse. */
+  generator?: 'gemini' | 'template';
 }
 
 interface ArticleSection {
@@ -509,7 +513,9 @@ async function main() {
   const prev = articles[0];
   const data = buildMarketData(quotes, prev);
 
-  const body = (await generateWithGemini(data)) ?? generateTemplate(data);
+  const geminiBody = await generateWithGemini(data);
+  const body = geminiBody ?? generateTemplate(data);
+  const generator: NewsArticle['generator'] = geminiBody ? 'gemini' : 'template';
 
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
@@ -518,6 +524,7 @@ async function main() {
     titleSlug: slugify(body.title) || 'metals-weekly',
     title: body.title,
     date: dateStr,
+    generator,
     summary: body.summary,
     intro: body.intro,
     sections: body.sections,
@@ -536,12 +543,29 @@ async function main() {
     },
   };
 
-  if (articles.some((a) => a.date === article.date)) {
-    console.log(`Article for ${article.date} already exists, skipping`);
-    return;
+  // One article per date. If this date already exists, only overwrite it when
+  // the new run is a genuine upgrade — a real Gemini article replacing a
+  // template (or older, untagged) fallback. Never downgrade, and never churn a
+  // new PR once we already have a Gemini article for the date.
+  const existingIdx = articles.findIndex((a) => a.date === article.date);
+  if (existingIdx !== -1) {
+    const existing = articles[existingIdx];
+    const isUpgrade = article.generator === 'gemini' && existing.generator !== 'gemini';
+    if (!isUpgrade) {
+      console.log(
+        `Article for ${article.date} already exists (${existing.generator ?? 'untagged'}); ` +
+          `skipping ${article.generator} article.`
+      );
+      return;
+    }
+    console.log(
+      `Upgrading ${article.date} article from ${existing.generator ?? 'untagged'} to gemini.`
+    );
+    articles[existingIdx] = article;
+  } else {
+    articles.unshift(article);
   }
 
-  articles.unshift(article);
   if (articles.length > 52) articles = articles.slice(0, 52);
 
   writeFileSync(NEWS_FILE, JSON.stringify(articles, null, 2) + '\n');

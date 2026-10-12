@@ -29,6 +29,9 @@ export interface NewsArticle {
     us10y: number;
     crude: number;
   };
+  /** Which path produced this article ('gemini' or 'template'). Set by the
+   *  generator script; optional here since older articles predate the field. */
+  generator?: 'gemini' | 'template';
 }
 
 /** Curated further-reading links shown at the foot of every article. */

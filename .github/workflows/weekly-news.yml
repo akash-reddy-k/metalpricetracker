@@ -40,7 +40,7 @@ jobs:
           # Free Google AI Studio key. If unset, the script falls back to a
           # deterministic template so the job still produces an article.
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-2.0-flash' }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.8-flash' }}
 
       - name: Check for changes
         id: changes

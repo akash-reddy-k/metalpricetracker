@@ -18,7 +18,7 @@
  * Usage:  npx tsx scripts/generate-news.ts
  * Env:
  *   GEMINI_API_KEY   Google AI Studio key (free). If unset, uses the template.
- *   GEMINI_MODEL     Override model (default: gemini-2.0-flash).
+ *   GEMINI_MODEL     Override model (default: gemini-3.8-flash).
  */
 
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
@@ -30,7 +30,7 @@ const NEWS_FILE = resolve(__dirname, '../src/data/news.json');
 
 const SCANNER_URL = 'https://scanner.tradingview.com/global/scan';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 

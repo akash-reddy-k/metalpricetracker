@@ -78,17 +78,35 @@ jobs:
             | jq -r '.number')"
           echo "Opened PR #$PR_NUMBER"
 
-          # Mergeability can still be computing right after creation, so retry.
+          # Required pre-merge checks (the Cloudflare Pages deploy) must finish
+          # before GitHub will allow the merge — attempting it while the PR is
+          # still blocked just returns HTTP 405. Poll the PR's mergeable_state
+          # once a minute and only merge once it reports "clean", giving the
+          # deploy time to complete. Up to 15 min, then leave the PR open.
           merged=0
-          for attempt in 1 2 3 4 5 6; do
-            if api -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" \
-              -d '{"merge_method":"squash"}'; then
-              echo "Merged PR #$PR_NUMBER"
-              merged=1
-              break
-            fi
-            echo "Merge attempt $attempt not ready; retrying in 5s..."
-            sleep 5
+          for attempt in $(seq 1 15); do
+            pr_json="$(api "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" || echo '{}')"
+            state="$(printf '%s' "$pr_json" | jq -r '.mergeable_state // "unknown"')"
+            echo "Attempt $attempt: PR #$PR_NUMBER mergeable_state=$state"
+            case "$state" in
+              clean | has_hooks)
+                if api -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" \
+                  -d '{"merge_method":"squash"}'; then
+                  echo "Merged PR #$PR_NUMBER"
+                  merged=1
+                  break
+                fi
+                echo "Merge rejected despite clean state; will retry."
+                ;;
+              dirty)
+                echo "::warning::PR #$PR_NUMBER has merge conflicts; leaving it open."
+                break
+                ;;
+              *)
+                # blocked / behind / unstable / unknown — checks still running.
+                : ;;
+            esac
+            sleep 60
           done
 
           if [ "$merged" != "1" ]; then

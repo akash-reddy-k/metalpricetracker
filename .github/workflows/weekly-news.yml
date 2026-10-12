@@ -76,8 +76,10 @@ jobs:
           # Branch name must be unique per run: the workflow can now run more than
           # once a day (multiple articles per date are supported), so a plain
           # news/weekly-$DATE branch would collide with a prior run's branch and
-          # the push would be rejected. GITHUB_RUN_ID is unique per run.
-          BRANCH="news/weekly-$DATE-$GITHUB_RUN_ID"
+          # the push would be rejected. Use a date-timestamp branch that mirrors
+          # the article filename convention (src/data/news/<timestamp>.json).
+          TS="$(date -u +%Y-%m-%dT%H-%M-%SZ)"
+          BRANCH="news/weekly-$TS"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"

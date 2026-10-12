@@ -1,6 +1,6 @@
 # MetalPrices.Online
 
-Real-time precious metals spot prices (Gold, Silver, Platinum, Palladium) with live duty-inclusive cost calculations for 13 countries.
+Real-time precious metals spot prices (Gold, Silver, Platinum, Palladium) with live duty-inclusive cost calculations for 13 countries, plus an automated weekly market-news article.
 
 **Live site**: [metalprices.online](https://metalprices.online)
 
@@ -75,8 +75,10 @@ VITE_HONO_SERVER_URL=http://localhost:3000
 | `npm run dev` | Start Vite dev server |
 | `npm run build` | Production build + generate SEO pages |
 | `npm run lint` | ESLint |
-| `npm run format` | Prettier |
+| `npm run format` | Prettier (write) |
+| `npm run format:check` | Prettier (check only) |
 | `npm run preview` | Preview production build locally |
+| `npm run generate-news` | Generate the weekly news article (see [Weekly News Generator](#weekly-news-generator)) |
 
 ---
 
@@ -108,6 +110,7 @@ Render auto-deploy must be **disabled** — deploys only via the release workflo
 | `CLOUDFLARE_ACCOUNT_ID` | Cloudflare account ID |
 | `VITE_HONO_SERVER_URL` | Backend URL e.g. `https://api.metalprices.online` |
 | `RENDER_DEPLOY_HOOK` | Render deploy hook URL (Settings → Deploy Hook) |
+| `GEMINI_API_KEY` | _(Optional)_ Google AI Studio key for the [weekly news generator](#weekly-news-generator); falls back to a template if unset |
 
 ### Required environment variables
 
@@ -117,6 +120,37 @@ Render auto-deploy must be **disabled** — deploys only via the release workflo
 **Cloudflare Pages** (frontend):
 - `VITE_HONO_SERVER_URL` — e.g. `https://api.metalprices.online`
 - `VITE_GOOGLE_TAG_ID` — Google Analytics tag (optional)
+
+---
+
+## Weekly News Generator
+
+A GitHub Actions workflow (`.github/workflows/weekly-news.yml`) publishes a
+plain-English precious-metals market recap once a week, hands-free. Articles are
+served at `/news` and `/news/:date/:slug` on the live site.
+
+**How it works**
+
+1. Runs every Sunday at 00:30 UTC, or on demand via *Actions → Weekly News Generator → Run workflow*.
+2. `npm run generate-news` pulls live metal prices plus the macro drivers that move them — US Dollar Index (DXY), US 10-year Treasury yield, WTI crude — from TradingView, computes week-over-week moves, and asks Google Gemini to write the article. If Gemini is unavailable it falls back to a deterministic template, so the job always produces an article.
+3. The result is written as its own file under `frontend/src/data/news/`, named by a unique publish timestamp (e.g. `2026-10-12T11-34-42Z.json`). Vite inlines every file in that folder at build time and the app sorts them newest-first. The generator prunes the oldest files beyond the latest 52 so the list self-trims to ~1 year. Each entry is tagged `generator: "gemini" | "template"`.
+4. Because `main` is protected ("Changes must be made through a pull request"), the workflow pushes to a dated branch `news/weekly-YYYY-MM-DD`, opens a PR, polls until the required checks (the Cloudflare Pages deploy) pass, then squash-merges the PR and deletes the branch — all via the GitHub REST API using the built-in `GITHUB_TOKEN`. If it can't merge within ~15 minutes it leaves the PR open for a manual merge.
+
+**Every run publishes a new article.** Because each article is a separate timestamped file, there is no per-date de-duplication — a manually triggered article and the automated weekly one can coexist on the same calendar day. Each is individually routable; the detail URL stays `/news/{date}/{titleSlug}`, and the generator makes the slug unique within a date if two articles would otherwise collide.
+
+**Configuration**
+
+| Name | Kind | Description |
+|---|---|---|
+| `GEMINI_API_KEY` | Secret | Google AI Studio key (free tier). If unset, the template fallback is used. |
+| `GEMINI_MODEL` | Variable _(optional)_ | Override the Gemini model. Defaults to `gemini-3.8-flash`. |
+
+Run it locally (writes a new file under `frontend/src/data/news/`):
+
+```bash
+cd frontend
+GEMINI_API_KEY=... npm run generate-news   # omit the key to use the template fallback
+```
 
 ---
 

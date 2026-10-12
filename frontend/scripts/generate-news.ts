@@ -13,7 +13,10 @@
  *   3. Ask Google Gemini (free tier) to turn the numbers into a short, plain-
  *      English article a layman can understand: what moved, why, and what to
  *      watch. If Gemini is unavailable, fall back to a deterministic template.
- *   4. Write a structured article to src/data/news.json.
+ *   4. Write the structured article to its own file under src/data/news/,
+ *      named by a unique publish timestamp (e.g. 2026-10-12T11-34-42Z.json).
+ *      Each run produces a new file, so a manual and an automated article can
+ *      coexist on the same calendar day — there is no per-date de-duplication.
  *
  * Usage:  npx tsx scripts/generate-news.ts
  * Env:
@@ -21,12 +24,17 @@
  *   GEMINI_MODEL     Override model (default: gemini-3.8-flash).
  */
 
-import { writeFileSync, readFileSync, existsSync } from 'node:fs';
+import { writeFileSync, readFileSync, readdirSync, mkdirSync, unlinkSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const NEWS_FILE = resolve(__dirname, '../src/data/news.json');
+// One JSON file per article lives in this folder. Legacy single-file storage
+// (src/data/news.json) was replaced by this folder so that multiple articles
+// can share a date without colliding.
+const NEWS_DIR = resolve(__dirname, '../src/data/news');
+// Keep at most this many articles; older files are pruned so the list self-trims.
+const MAX_ARTICLES = 52;
 
 const SCANNER_URL = 'https://scanner.tradingview.com/global/scan';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
@@ -35,11 +43,16 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface NewsArticle {
+  /** Unique identifier = the article's file stem (publish timestamp, e.g.
+   *  "2026-10-12T11-34-42Z"). Stable across the app for React keys and sorting. */
+  id: string;
   slug: string;
   /** URL-safe slug derived from the title; used in the article's detail URL. */
   titleSlug: string;
   title: string;
   date: string; // YYYY-MM-DD
+  /** Full ISO publish timestamp; primary sort key (newest first). */
+  publishedAt: string;
   summary: string;
   /** Long-form, in-depth body: a lede plus headed sections and key takeaways. */
   intro: string;
@@ -59,6 +72,10 @@ interface NewsArticle {
     us10y: number;
     crude: number;
   };
+  /** Which path produced this article ('gemini' or the deterministic
+   *  'template' fallback) — kept for provenance. Optional so older articles
+   *  written before this field existed still parse. */
+  generator?: 'gemini' | 'template';
 }
 
 interface ArticleSection {
@@ -492,15 +509,29 @@ ${bars}
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
-  let articles: NewsArticle[] = [];
-  if (existsSync(NEWS_FILE)) {
+/** Reads every article file from NEWS_DIR, newest first. */
+function loadArticles(): NewsArticle[] {
+  let files: string[];
+  try {
+    files = readdirSync(NEWS_DIR).filter((f) => f.endsWith('.json'));
+  } catch {
+    return []; // folder doesn't exist yet
+  }
+  const articles: NewsArticle[] = [];
+  for (const f of files) {
     try {
-      articles = JSON.parse(readFileSync(NEWS_FILE, 'utf-8'));
+      articles.push(JSON.parse(readFileSync(resolve(NEWS_DIR, f), 'utf-8')));
     } catch {
-      console.warn('Could not parse existing news.json, starting fresh');
+      console.warn(`Could not parse ${f}, skipping`);
     }
   }
+  // Newest first by publish timestamp (fall back to date for legacy entries).
+  return articles.sort((a, b) => (b.publishedAt ?? b.date).localeCompare(a.publishedAt ?? a.date));
+}
+
+async function main() {
+  mkdirSync(NEWS_DIR, { recursive: true });
+  const articles = loadArticles();
 
   const allTickers = [...Object.values(METAL_TICKERS), ...Object.values(MACRO_TICKERS)];
   console.log(`Fetching ${allTickers.length} quotes from TradingView scanner...`);
@@ -509,15 +540,30 @@ async function main() {
   const prev = articles[0];
   const data = buildMarketData(quotes, prev);
 
-  const body = (await generateWithGemini(data)) ?? generateTemplate(data);
+  const geminiBody = await generateWithGemini(data);
+  const body = geminiBody ?? generateTemplate(data);
+  const generator: NewsArticle['generator'] = geminiBody ? 'gemini' : 'template';
 
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10);
+  // Unique, chronologically sortable, filesystem-safe id, e.g. 2026-10-12T11-34-42Z.
+  const id = now.toISOString().slice(0, 19).replace(/:/g, '-') + 'Z';
+
+  // The URL is /news/{date}/{titleSlug}. Two articles can share a date, so make
+  // the slug unique within that date to keep every article individually routable.
+  const baseSlug = slugify(body.title) || 'metals-weekly';
+  const sameDaySlugs = new Set(articles.filter((a) => a.date === dateStr).map((a) => a.titleSlug));
+  let titleSlug = baseSlug;
+  for (let n = 2; sameDaySlugs.has(titleSlug); n++) titleSlug = `${baseSlug}-${n}`;
+
   const article: NewsArticle = {
-    slug: `${dateStr}-metals-weekly`,
-    titleSlug: slugify(body.title) || 'metals-weekly',
+    id,
+    slug: id,
+    titleSlug,
     title: body.title,
     date: dateStr,
+    publishedAt: now.toISOString(),
+    generator,
     summary: body.summary,
     intro: body.intro,
     sections: body.sections,
@@ -536,18 +582,20 @@ async function main() {
     },
   };
 
-  if (articles.some((a) => a.date === article.date)) {
-    console.log(`Article for ${article.date} already exists, skipping`);
-    return;
-  }
-
-  articles.unshift(article);
-  if (articles.length > 52) articles = articles.slice(0, 52);
-
-  writeFileSync(NEWS_FILE, JSON.stringify(articles, null, 2) + '\n');
-  console.log(`Wrote ${NEWS_FILE}`);
+  // Every run publishes a new file — no per-date de-duplication. A manual and an
+  // automated article can therefore coexist on the same calendar day.
+  const outFile = resolve(NEWS_DIR, `${id}.json`);
+  writeFileSync(outFile, JSON.stringify(article, null, 2) + '\n');
+  console.log(`Wrote ${outFile}`);
   console.log(`Title: ${article.title}`);
-  console.log(`Articles total: ${articles.length}`);
+
+  // Prune oldest files beyond the cap so the folder self-trims to ~1 year.
+  const all = loadArticles(); // newest first, now including the file just written
+  for (const stale of all.slice(MAX_ARTICLES)) {
+    unlinkSync(resolve(NEWS_DIR, `${stale.id}.json`));
+    console.log(`Pruned old article ${stale.id}`);
+  }
+  console.log(`Articles total: ${Math.min(all.length, MAX_ARTICLES)}`);
 }
 
 main().catch((err) => {

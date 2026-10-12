@@ -697,10 +697,12 @@ interface NewsSectionData {
 }
 
 interface NewsArticleData {
+  id: string;
   slug: string;
   titleSlug: string;
   title: string;
   date: string;
+  publishedAt: string;
   summary: string;
   intro: string;
   sections: NewsSectionData[];
@@ -720,13 +722,24 @@ const NEWS_REFERENCE_LINKS: Array<{ label: string; href: string }> = [
 ];
 
 function loadNewsArticles(): NewsArticleData[] {
+  // One JSON file per article under src/data/news/, named by publish timestamp.
+  const dir = path.resolve(__dir, '../src/data/news');
+  let files: string[];
   try {
-    const raw = fs.readFileSync(path.resolve(__dir, '../src/data/news.json'), 'utf8');
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    files = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
   } catch {
-    return [];
+    return []; // folder absent
   }
+  const articles: NewsArticleData[] = [];
+  for (const f of files) {
+    try {
+      articles.push(JSON.parse(fs.readFileSync(path.join(dir, f), 'utf8')));
+    } catch {
+      // skip malformed file
+    }
+  }
+  // Newest first by publish timestamp (fall back to date for legacy entries).
+  return articles.sort((a, b) => (b.publishedAt ?? b.date).localeCompare(a.publishedAt ?? a.date));
 }
 
 const NEWS_ARTICLES = loadNewsArticles();

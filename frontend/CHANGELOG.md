@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.2](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.1...metalprices-frontend-v0.4.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* update default Gemini model to gemini-3.8-flash ([d73b587](https://github.com/akash-reddy-k/metalpricetracker/commit/d73b58740525d2140ca87a8cc3e8de8e117449d8))
+
 ## [0.4.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.0...metalprices-frontend-v0.4.1) (2026-10-09)
 
 

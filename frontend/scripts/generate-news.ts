@@ -298,7 +298,7 @@ async function generateWithGemini(d: MarketData): Promise<ArticleBody | null> {
   // 5xx) before falling back to the template. 4xx and bad-payload errors won't
   // improve on retry, so bail out of those immediately.
   const MAX_ATTEMPTS = 3;
-  const TIMEOUT_MS = 120_000;
+  const TIMEOUT_MS = 300_000;
   const BACKOFF_MS = 3_000;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {

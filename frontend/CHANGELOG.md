@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.3](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.2...metalprices-frontend-v0.4.3) (2026-10-12)
+
+
+### Bug Fixes
+
+* retry Gemini call and raise timeout so news generation is robust ([9c1c078](https://github.com/akash-reddy-k/metalpricetracker/commit/9c1c078e8791f147781e9e9529ed87d4bfb99140))
+* wait for required checks before merging news PR; raise Gemini timeout to 300s ([44d8613](https://github.com/akash-reddy-k/metalpricetracker/commit/44d8613e6ae11d560d1144c02f5281779a6110b7))
+
+## [0.4.2](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.1...metalprices-frontend-v0.4.2) (2026-10-12)
+
+
+### Bug Fixes
+
+* update default Gemini model to gemini-3.8-flash ([d73b587](https://github.com/akash-reddy-k/metalpricetracker/commit/d73b58740525d2140ca87a8cc3e8de8e117449d8))
+
 ## [0.4.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.0...metalprices-frontend-v0.4.1) (2026-10-09)
 
 

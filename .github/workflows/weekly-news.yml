@@ -45,7 +45,15 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          git diff --quiet src/data/news.json && echo "changed=false" >> "$GITHUB_OUTPUT" || echo "changed=true" >> "$GITHUB_OUTPUT"
+          # Articles live as individual files under src/data/news/. The generator
+          # writes a new file (and may prune old ones), so check the whole folder
+          # with `git status --porcelain`, which also sees untracked new files
+          # that `git diff` would miss.
+          if [ -n "$(git status --porcelain src/data/news)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
 
       # main is protected by a repository ruleset ("Changes must be made through
       # a pull request"), so we cannot push to it directly. Push the generated
@@ -69,7 +77,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add src/data/news.json
+          git add -A src/data/news
           git commit -m "chore: add weekly metals news for $DATE"
           git push origin "$BRANCH"
 

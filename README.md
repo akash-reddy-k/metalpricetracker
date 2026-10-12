@@ -133,10 +133,10 @@ served at `/news` and `/news/:date/:slug` on the live site.
 
 1. Runs every Sunday at 00:30 UTC, or on demand via *Actions → Weekly News Generator → Run workflow*.
 2. `npm run generate-news` pulls live metal prices plus the macro drivers that move them — US Dollar Index (DXY), US 10-year Treasury yield, WTI crude — from TradingView, computes week-over-week moves, and asks Google Gemini to write the article. If Gemini is unavailable it falls back to a deterministic template, so the job always produces an article.
-3. The result is written to `frontend/src/data/news.json` (newest first, capped at the latest 52 entries so the list self-trims to ~1 year). Each entry is tagged `generator: "gemini" | "template"`.
+3. The result is written as its own file under `frontend/src/data/news/`, named by a unique publish timestamp (e.g. `2026-10-12T11-34-42Z.json`). Vite inlines every file in that folder at build time and the app sorts them newest-first. The generator prunes the oldest files beyond the latest 52 so the list self-trims to ~1 year. Each entry is tagged `generator: "gemini" | "template"`.
 4. Because `main` is protected ("Changes must be made through a pull request"), the workflow pushes to a dated branch `news/weekly-YYYY-MM-DD`, opens a PR, polls until the required checks (the Cloudflare Pages deploy) pass, then squash-merges the PR and deletes the branch — all via the GitHub REST API using the built-in `GITHUB_TOKEN`. If it can't merge within ~15 minutes it leaves the PR open for a manual merge.
 
-**One article per date.** Re-running for a date that already has an article is a no-op — except that a successful Gemini run will _upgrade_ an article that previously fell back to the template.
+**Every run publishes a new article.** Because each article is a separate timestamped file, there is no per-date de-duplication — a manually triggered article and the automated weekly one can coexist on the same calendar day. Each is individually routable; the detail URL stays `/news/{date}/{titleSlug}`, and the generator makes the slug unique within a date if two articles would otherwise collide.
 
 **Configuration**
 
@@ -145,7 +145,7 @@ served at `/news` and `/news/:date/:slug` on the live site.
 | `GEMINI_API_KEY` | Secret | Google AI Studio key (free tier). If unset, the template fallback is used. |
 | `GEMINI_MODEL` | Variable _(optional)_ | Override the Gemini model. Defaults to `gemini-3.8-flash`. |
 
-Run it locally (writes `frontend/src/data/news.json`):
+Run it locally (writes a new file under `frontend/src/data/news/`):
 
 ```bash
 cd frontend

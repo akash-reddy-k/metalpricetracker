@@ -1,16 +1,19 @@
-import newsData from './news.json';
-
 export interface ArticleSection {
   heading: string;
   paragraphs: string[];
 }
 
 export interface NewsArticle {
+  /** Unique identifier = the article's file stem (publish timestamp, e.g.
+   *  "2026-10-12T11-34-42Z"). Used for React keys and sorting. */
+  id: string;
   slug: string;
   /** URL-safe slug derived from the title; used in the detail URL. */
   titleSlug: string;
   title: string;
   date: string; // ISO YYYY-MM-DD
+  /** Full ISO publish timestamp; primary sort key (newest first). */
+  publishedAt: string;
   summary: string;
   /** Long-form body: a lede, headed sections and practical key takeaways. */
   intro: string;
@@ -48,8 +51,18 @@ export const REFERENCE_LINKS: ReferenceLink[] = [
   { label: 'Federal Reserve: monetary policy & interest rates', href: 'https://www.federalreserve.gov/monetarypolicy.htm' },
 ];
 
+// Each article is its own JSON file under ./news/, named by its publish
+// timestamp (e.g. news/2026-10-12T11-34-42Z.json). Vite inlines them all at
+// build time; no network fetch happens at runtime.
+const newsModules = import.meta.glob<NewsArticle>('./news/*.json', {
+  eager: true,
+  import: 'default',
+});
+
 /** Newest-first list of all generated news articles. */
-export const newsArticles: NewsArticle[] = newsData as NewsArticle[];
+export const newsArticles: NewsArticle[] = Object.values(newsModules).sort((a, b) =>
+  (b.publishedAt ?? b.date).localeCompare(a.publishedAt ?? a.date),
+);
 
 /** Canonical in-app path for an article's detail page: /news/{date}/{titleSlug}. */
 export const newsPath = (a: Pick<NewsArticle, 'date' | 'titleSlug'>): string =>

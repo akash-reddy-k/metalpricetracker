@@ -16,7 +16,7 @@ export const WeeklyReports: React.FC = () => {
 
       <div className="news-list">
         {newsArticles.map((article) => (
-          <Link key={article.slug} to={newsPath(article)} className="news-card">
+          <Link key={article.id} to={newsPath(article)} className="news-card">
             <time className="blog-date">{formatNewsDate(article.date)}</time>
             <h3>{article.title}</h3>
             <p className="news-card-summary">{article.summary}</p>

@@ -18,11 +18,23 @@ jobs:
         working-directory: frontend
 
     steps:
+      # Mint a short-lived installation token for the dedicated GitHub App that
+      # is on the branch ruleset's bypass list. The news PR is merged with this
+      # token so it can bypass the "Required approvals" rule WITHOUT weakening
+      # approvals for human PRs. Requires repo variable NEWS_BOT_APP_ID and
+      # secret NEWS_BOT_PRIVATE_KEY (see README / repo settings).
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.NEWS_BOT_APP_ID }}
+          private-key: ${{ secrets.NEWS_BOT_PRIVATE_KEY }}
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: main
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -56,15 +68,17 @@ jobs:
           fi
 
       # main is protected by a repository ruleset ("Changes must be made through
-      # a pull request"), so we cannot push to it directly. Push the generated
-      # article to a per-run branch, open a PR, and auto-merge it — all via the
-      # GitHub REST API (no gh CLI), authenticated with the workflow GITHUB_TOKEN.
-      # The change still lands through a PR (satisfying the ruleset); the bot
-      # merges its own PR because no approvals are required.
+      # a pull request" + "Required approvals"), so we cannot push to it directly
+      # and GITHUB_TOKEN can neither approve nor merge past the approval rule.
+      # Push the generated article to a per-run branch, open a PR, and merge it —
+      # all via the GitHub REST API (no gh CLI), authenticated with the GitHub
+      # App installation token minted above. The app is on the ruleset's bypass
+      # list, so its merge is allowed without a human approval; human PRs still
+      # require approvals.
       - name: Open and auto-merge the news PR
         if: steps.changes.outputs.changed == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           api() { curl --fail -sS \
@@ -92,34 +106,49 @@ jobs:
             | jq -r '.number')"
           echo "Opened PR #$PR_NUMBER"
 
-          # Required pre-merge checks (the Cloudflare Pages deploy) must finish
-          # before GitHub will allow the merge — attempting it while the PR is
-          # still blocked just returns HTTP 405. Poll the PR's mergeable_state
-          # once a minute and only merge once it reports "clean", giving the
-          # deploy time to complete. Up to 15 min, then leave the PR open.
+          # The app token bypasses the ruleset, so the merge skips BOTH the
+          # required approval AND the required status checks — meaning
+          # mergeable_state stays "blocked" (approval missing) and can't be used
+          # as the go-signal. We still WANT the Cloudflare Pages deploy to finish
+          # first, so gate on the head commit's check runs ourselves: wait while
+          # any are still queued/in-progress, bail if one fails, and only once
+          # they are all green issue the merge (which bypasses the approval).
+          # Poll once a minute for up to 15 min, then leave the PR open.
           merged=0
           for attempt in $(seq 1 15); do
             pr_json="$(api "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" || echo '{}')"
             state="$(printf '%s' "$pr_json" | jq -r '.mergeable_state // "unknown"')"
+            head_sha="$(printf '%s' "$pr_json" | jq -r '.head.sha // empty')"
             echo "Attempt $attempt: PR #$PR_NUMBER mergeable_state=$state"
-            case "$state" in
-              clean | has_hooks)
-                if api -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" \
-                  -d '{"merge_method":"squash"}'; then
-                  echo "Merged PR #$PR_NUMBER"
-                  merged=1
-                  break
-                fi
-                echo "Merge rejected despite clean state; will retry."
-                ;;
-              dirty)
-                echo "::warning::PR #$PR_NUMBER has merge conflicts; leaving it open."
-                break
-                ;;
-              *)
-                # blocked / behind / unstable / unknown — checks still running.
-                : ;;
-            esac
+
+            if [ "$state" = "dirty" ]; then
+              echo "::warning::PR #$PR_NUMBER has merge conflicts; leaving it open."
+              break
+            fi
+
+            checks_json="$(api "https://api.github.com/repos/$GITHUB_REPOSITORY/commits/$head_sha/check-runs" || echo '{}')"
+            total="$(printf '%s' "$checks_json" | jq '(.check_runs // []) | length' || echo 0)"
+            running="$(printf '%s' "$checks_json" | jq '[(.check_runs // [])[] | select(.status != "completed")] | length' || echo 1)"
+            failed="$(printf '%s' "$checks_json" | jq '[(.check_runs // [])[] | select(.conclusion != null and (.conclusion | IN("success","neutral","skipped") | not))] | length' || echo 0)"
+
+            if [ "${failed:-0}" -gt 0 ]; then
+              echo "::warning::PR #$PR_NUMBER has a failing check; leaving it open."
+              break
+            fi
+            if [ "${total:-0}" -eq 0 ] || [ "${running:-1}" -gt 0 ]; then
+              echo "Checks not green yet (total=$total running=$running); waiting."
+              sleep 60
+              continue
+            fi
+
+            # Checks are green — merge with the bypass token (skips the approval).
+            if api -X PUT "https://api.github.com/repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/merge" \
+              -d '{"merge_method":"squash"}'; then
+              echo "Merged PR #$PR_NUMBER"
+              merged=1
+              break
+            fi
+            echo "Merge rejected despite green checks; will retry."
             sleep 60
           done
 

@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.5.1](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.5.0...metalprices-frontend-v0.5.1) (2026-10-28)
+
+
+### Bug Fixes
+
+* price Indian gold and silver off MCX instead of spot plus flat duty ([b879975](https://github.com/akash-reddy-k/metalpricetracker/commit/b879975da42e79e791854472136da262cb06ed62))
+* price Indian gold and silver off MCX instead of spot plus flat duty ([cb857bf](https://github.com/akash-reddy-k/metalpricetracker/commit/cb857bf1ba4cdcdc66d582d08023638240507089))
+
 ## [0.5.0](https://github.com/akash-reddy-k/metalpricetracker/compare/metalprices-frontend-v0.4.3...metalprices-frontend-v0.5.0) (2026-10-12)
 
 

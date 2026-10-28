@@ -58,6 +58,10 @@ export function useLiveQuotes(throttleMs: number): LiveQuotesState & { reconnect
           setQuotes(valid);
           setLastUpdated(new Date());
           setStatus('live');
+          // The server only broadcasts quotes after a successful upstream poll,
+          // so a frame arriving means the feed recovered. Without this the stale
+          // badge latches on until the page is reloaded.
+          setStale(false);
         } catch {
           // A single malformed frame should not kill the stream.
         }

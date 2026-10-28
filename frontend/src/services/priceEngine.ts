@@ -11,16 +11,19 @@ export const FALLBACK_SPOT_PRICES = {
   palladium: 1344.0,
 };
 
+export const GRAMS_PER_TROY_OZ = 31.1034768;
+
 // Convert prices between ounces, grams, and other popular weight units
-// 1 troy ounce = 31.1034768 grams
 export const WEIGHT_CONVERSIONS: Record<WeightUnit, number> = {
   oz: 1,
-  g: 1 / 31.1034768,
+  g: 1 / GRAMS_PER_TROY_OZ,
   kg: 32.1507466,
-  tola: 10 / 31.1034768, // Metric Tola (10g)
-  tael: 37.5 / 31.1034768, // Chinese Tael (37.5g)
-  baht: 15.244 / 31.1034768, // Thai Baht (15.244g)
-  mesghal: 4.6083 / 31.1034768, // Iranian Mesghal (4.6083g)
+  // Traditional (BIS) tola, the unit Indian bullion associations quote against.
+  // Not the 10 g "metric tola" some modern mints stamp on bars.
+  tola: 11.6638 / GRAMS_PER_TROY_OZ,
+  tael: 37.5 / GRAMS_PER_TROY_OZ, // Chinese Tael (37.5g)
+  baht: 15.244 / GRAMS_PER_TROY_OZ, // Thai Baht (15.244g)
+  mesghal: 4.6083 / GRAMS_PER_TROY_OZ, // Iranian Mesghal (4.6083g)
   dwt: 0.05, // Pennyweight (exactly 1/20 of troy oz)
 };
 

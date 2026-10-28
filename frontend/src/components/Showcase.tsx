@@ -42,11 +42,11 @@ const SHOWCASE_ITEMS: ShowcaseItem[] = [
   },
   {
     id: 'gold-tola-10g',
-    name: '1 Tola Gold Minted Bar (10g)',
+    name: '10g Gold Minted Bar',
     metal: 'gold',
     purityIndex: 0, // 24K
-    weight: 1,
-    weightUnit: 'tola',
+    weight: 10,
+    weightUnit: 'g',
     productType: 'bullion',
     description: 'Traditional metric gold bar, standard across South Asia and Middle East.',
     image:

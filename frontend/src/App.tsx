@@ -246,7 +246,7 @@ function App() {
               <option value="oz">oz (troy)</option>
               <option value="g">g (grams)</option>
               <option value="kg">kg (kilos)</option>
-              <option value="tola">tola (10g)</option>
+              <option value="tola">tola (11.6638g)</option>
               <option value="tael">tael (37.5g)</option>
               <option value="baht">baht (15.244g)</option>
               <option value="mesghal">mesghal (4.6083g)</option>

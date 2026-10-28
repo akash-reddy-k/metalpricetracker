@@ -1,9 +1,37 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import type { SpotPrices, MetalType, CurrencyType, WeightUnit } from '../types/metals';
-import { getPricePerUnit } from '../services/priceEngine';
+import { getPricePerUnit, WEIGHT_CONVERSIONS, GRAMS_PER_TROY_OZ } from '../services/priceEngine';
 import { COUNTRIES, countrySlug, getMetalImportDuty } from '../data/countries';
+import { useIndiaRates } from '../hooks/useIndiaRates';
+import type { IndiaRatesResponse } from '../services/api';
 import { Sparkles, Activity, ArrowUpRight } from 'lucide-react';
+
+/** Beyond this the MCX anchor is too old to publish as a current rate. */
+const MAX_RATE_AGE_MS = 5 * 60_000;
+
+/**
+ * Indian bullion association rates track MCX futures, not international spot, so
+ * for gold and silver we publish the server's MCX-anchored number instead of
+ * re-deriving it from spot plus a flat duty percentage — the latter understates
+ * the domestic rate by ~1.5% on gold and ~4% on silver, and no single duty
+ * percentage fits both metals.
+ *
+ * Returns the 24K / 999-fine reference price per gram, or null when the anchor
+ * is unavailable or stale and the caller should fall back to spot plus duty.
+ */
+function associationPerGram(
+  rates: IndiaRatesResponse | null,
+  metal: MetalType
+): number | null {
+  if (!rates || rates.stale) return null;
+  if (Date.now() - rates.lastPollAt > MAX_RATE_AGE_MS) return null;
+
+  const rate = metal === 'gold' ? rates.gold : metal === 'silver' ? rates.silver : null;
+  if (!rate || rate.basis !== 'mcx') return null;
+
+  return rate.perGramPure;
+}
 
 interface LivePriceCardsProps {
   prices: SpotPrices;
@@ -89,6 +117,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
 
   const currencyRate = exchangeRates[selectedCurrency];
   const currentCountry = COUNTRIES.find((c) => c.currency === selectedCurrency) || COUNTRIES[0];
+  const indiaRates = useIndiaRates(selectedCurrency === 'INR');
 
   useEffect(() => {
     if (!previousPrices.current) {
@@ -174,7 +203,13 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
         // Import duty
         const dutyPercent = getMetalImportDuty(currentCountry, metal);
         const importDutyVal = baseSpotPriceTarget * (dutyPercent / 100);
-        const localPriceWithDuty = baseSpotPriceTarget + importDutyVal;
+
+        // Prefer the MCX-anchored association rate where we have one.
+        const perGramPure = associationPerGram(indiaRates, metal);
+        const localPrice =
+          perGramPure !== null
+            ? perGramPure * WEIGHT_CONVERSIONS[weightUnit] * GRAMS_PER_TROY_OZ
+            : baseSpotPriceTarget + importDutyVal;
 
         return (
           <div
@@ -229,14 +264,18 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                   alignItems: 'center',
                   minHeight: '24px',
                 }}
-                title={`This is the spot price of ${details.name} in ${selectedCurrency} including ${currentCountry.name}'s import duty (${dutyPercent}%) but before local VAT/GST and dealer markup.`}
+                title={
+                  perGramPure !== null
+                    ? `${details.name} 24K / 999-fine reference rate for India, derived from MCX futures plus the typical bullion association premium. Indicative, and before GST, making charges and dealer markup.`
+                    : `This is the spot price of ${details.name} in ${selectedCurrency} including ${currentCountry.name}'s import duty (${dutyPercent}%) but before local VAT/GST and dealer markup.`
+                }
               >
                 <div
                   style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px' }}
                 >
                   <span style={{ fontSize: '15px' }}>{currentCountry.flag}</span>
                   <span style={{ fontSize: '15px', fontWeight: '600', color: '#fff' }}>
-                    Local Spot (Duty Paid)
+                    {perGramPure !== null ? 'Bullion Rate (24K/999)' : 'Local Spot (Duty Paid)'}
                   </span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
@@ -255,7 +294,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                       currency: selectedCurrency,
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
-                    }).format(localPriceWithDuty)}
+                    }).format(localPrice)}
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
                     /{weightUnit}
@@ -300,7 +339,7 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                 </div>
               </div>
 
-              {/* Duty Breakdown Subtitle */}
+              {/* Basis Breakdown Subtitle */}
               <div
                 style={{
                   fontSize: '11px',
@@ -313,9 +352,15 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                   marginTop: '2px',
                   minHeight: '20px',
                 }}
-                title={`Calculation: Base spot value (${new Intl.NumberFormat(undefined, { style: 'currency', currency: selectedCurrency }).format(baseSpotPriceTarget)}) + ${dutyPercent}% Import Duty (${new Intl.NumberFormat(undefined, { style: 'currency', currency: selectedCurrency }).format(importDutyVal)})`}
+                title={
+                  perGramPure !== null
+                    ? 'Calculation: MCX futures settlement plus the typical bullion association premium, scaled to the selected weight unit.'
+                    : `Calculation: Base spot value (${new Intl.NumberFormat(undefined, { style: 'currency', currency: selectedCurrency }).format(baseSpotPriceTarget)}) + ${dutyPercent}% Import Duty (${new Intl.NumberFormat(undefined, { style: 'currency', currency: selectedCurrency }).format(importDutyVal)})`
+                }
               >
-                <span style={{ marginRight: '8px' }}>Base (converted)</span>
+                <span style={{ marginRight: '8px' }}>
+                  {perGramPure !== null ? 'Basis' : 'Base (converted)'}
+                </span>
                 <span
                   style={{
                     color: 'var(--text-muted)',
@@ -324,20 +369,26 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                     flexShrink: 0,
                   }}
                 >
-                  {new Intl.NumberFormat(undefined, {
-                    style: 'currency',
-                    currency: selectedCurrency,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }).format(baseSpotPriceTarget)}{' '}
-                  + {dutyPercent}% Duty (
-                  {new Intl.NumberFormat(undefined, {
-                    style: 'currency',
-                    currency: selectedCurrency,
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  }).format(importDutyVal)}
-                  )
+                  {perGramPure !== null ? (
+                    'MCX + association premium'
+                  ) : (
+                    <>
+                      {new Intl.NumberFormat(undefined, {
+                        style: 'currency',
+                        currency: selectedCurrency,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(baseSpotPriceTarget)}{' '}
+                      + {dutyPercent}% Duty (
+                      {new Intl.NumberFormat(undefined, {
+                        style: 'currency',
+                        currency: selectedCurrency,
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      }).format(importDutyVal)}
+                      )
+                    </>
+                  )}
                 </span>
               </div>
             </div>
@@ -367,15 +418,29 @@ export const LivePriceCards: React.FC<LivePriceCardsProps> = ({
                           { label: 'Per Gram', u: 'g' as WeightUnit },
                         ];
 
+                // Keep these on the same basis as the headline row, otherwise the
+                // card contradicts itself — a spot-derived "Per Kilo" sits ~16%
+                // below the bullion rate shown directly above it.
                 return secondary.map((sec) => (
                   <div
                     key={sec.u}
                     className="mini-row"
-                    title={`Alternative international spot price for 1 ${sec.u} of ${details.name} in ${selectedCurrency}.`}
+                    title={
+                      perGramPure !== null
+                        ? `Indian bullion rate for 1 ${sec.u} of 24K / 999-fine ${details.name}.`
+                        : `Alternative international spot price for 1 ${sec.u} of ${details.name} in ${selectedCurrency}.`
+                    }
                   >
                     <span className="mini-lbl">{sec.label}</span>
                     <span className="mini-val">
-                      {formatPrice(currentPriceUSD, getPricePerUnit(1, sec.u))}
+                      {perGramPure !== null
+                        ? new Intl.NumberFormat(undefined, {
+                            style: 'currency',
+                            currency: selectedCurrency,
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          }).format(perGramPure * WEIGHT_CONVERSIONS[sec.u] * GRAMS_PER_TROY_OZ)
+                        : formatPrice(currentPriceUSD, getPricePerUnit(1, sec.u))}
                     </span>
                   </div>
                 ));
